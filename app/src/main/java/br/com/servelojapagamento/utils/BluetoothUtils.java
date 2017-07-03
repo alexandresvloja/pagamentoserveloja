@@ -8,12 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
-
 import java.util.Set;
-
 import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
-
-import static app.akexorcist.bluetotohspp.library.BluetoothState.REQUEST_ENABLE_BT;
 
 
 /**
@@ -23,6 +19,7 @@ import static app.akexorcist.bluetotohspp.library.BluetoothState.REQUEST_ENABLE_
 public class BluetoothUtils {
 
     private String TAG;
+    private final int SOLICITACAO_HABILITAR_BLUETOOTH = 1000;
     private Activity activity;
     private BluetoothAdapter bluetoothAdapter;
     private StatusBluetoothListener statusBluetoothListener;
@@ -69,7 +66,7 @@ public class BluetoothUtils {
 
     public void solicitarAtivacaoBluetooth() {
         Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-        activity.startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        activity.startActivityForResult(enableBtIntent, SOLICITACAO_HABILITAR_BLUETOOTH);
     }
 
     public Set<BluetoothDevice> getDispositivosPareados() {
