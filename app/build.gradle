@@ -26,6 +26,11 @@ dependencies {
     })
     // criação de dialog material design
     compile 'com.afollestad.material-dialogs:commons:0.9.4.5'
+    // retrofit
+    compile 'com.squareup.retrofit2:retrofit:2.0.2'
+    compile 'com.squareup.retrofit2:converter-gson:2.0.2'
+    // trata permissoes
+    compile 'com.github.hotchemi:permissionsdispatcher:2.2.0'
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     testCompile 'junit:junit:4.12'
