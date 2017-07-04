@@ -10,7 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import br.com.servelojapagamento.interfaces.RespostaConexaoBlueetothPinpadListener;
-import br.com.servelojapagamento.interfaces.RespostaTransacaoListener;
+import br.com.servelojapagamento.interfaces.RespostaTransacaoStoneListener;
+import br.com.servelojapagamento.preferences.PrefsHelper;
 import permissions.dispatcher.NeedsPermission;
 import stone.application.StoneStart;
 import stone.application.enums.InstalmentTransactionEnum;
@@ -27,6 +28,21 @@ import stone.utils.PinpadObject;
 import stone.utils.Stone;
 import stone.utils.StoneTransaction;
 
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.A_VISTA;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.CINCO_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.DEZ_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.DOZE_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.DUAS_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.NOVE_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.OITO_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.ONZE_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.QUATRO_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.SEIS_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.SETE_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.QntParcelas.TRES_PARCELAS_SEM_JUROS;
+import static br.com.servelojapagamento.utils.TransacaoEnum.TipoTransacao.CREDITO;
+import static br.com.servelojapagamento.utils.TransacaoEnum.TipoTransacao.DEBITO;
+
 /**
  * Created by Alexandre on 03/07/2017.
  */
@@ -37,10 +53,12 @@ public class StoneUtils {
     private String TAG;
     private RespostaConexaoBlueetothPinpadListener respostaConexaoBlueetothPinpadListener;
     private boolean modoDesenvolvedor;
+    private PrefsHelper prefsHelper;
 
     public StoneUtils(Activity activity) {
         this.TAG = getClass().getSimpleName();
         this.activity = activity;
+        this.prefsHelper = new PrefsHelper(activity);
     }
 
     @NeedsPermission(Manifest.permission.READ_PHONE_STATE)
@@ -78,7 +96,7 @@ public class StoneUtils {
 
     }
 
-    public void iniciarComunicacaoPinpad(BluetoothDevice dispositivo, final RespostaConexaoBlueetothPinpadListener
+    public void iniciarComunicacaoPinpad(final BluetoothDevice dispositivo, final RespostaConexaoBlueetothPinpadListener
             respostaConexaoBlueetothPinpadListener) {
         try {
             Log.d(TAG, "iniciarComunicacaoPinpad: ");
@@ -94,6 +112,8 @@ public class StoneUtils {
                     Log.d(TAG, "onSuccess: ");
                     respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(true,
                             bluetoothConnectionProvider.getListOfErrors());
+                    prefsHelper.salvarPinpadMac(dispositivo.getAddress());
+                    prefsHelper.salvarPinpadModelo(dispositivo.getName());
                 }
 
                 @Override
@@ -109,23 +129,19 @@ public class StoneUtils {
         }
     }
 
-    public void iniciarTransacao(String valor, int tipoTransacao, final RespostaTransacaoListener respostaTransacaoListener) {
+    public void iniciarTransacao(String valor, int tipoTransacao, int qntParcelas,
+                                 final RespostaTransacaoStoneListener respostaTransacaoStoneListener) {
         Log.d(TAG, "iniciarTransacao: ");
         final StoneTransaction stoneTransaction = new StoneTransaction(Stone.getPinpadFromListAt(0));
         stoneTransaction.setAmount(valor);
         stoneTransaction.setEmailClient(null);
         stoneTransaction.setRequestId("");
         stoneTransaction.setUserModel(GlobalInformations.getUserModel(0));
-
-        if (tipoTransacao == 0) {
-            stoneTransaction.setTypeOfTransaction(TypeOfTransactionEnum.DEBIT);
-        } else if (tipoTransacao == 1) {
-            stoneTransaction.setTypeOfTransaction(TypeOfTransactionEnum.CREDIT);
-        }
-
-        // Informa a quantidade de parcelas.
-        stoneTransaction.setInstalmentTransactionEnum(InstalmentTransactionEnum.ONE_INSTALMENT);
-        // Processo para envio da transacao.
+        // tipo de transação (débito ou crédito)
+        stoneTransaction.setTypeOfTransaction(getTipoTransacaoStone(tipoTransacao));
+        // quantidade de parcelas.
+        stoneTransaction.setInstalmentTransactionEnum(getParcelaStone(qntParcelas));
+        // processo para envio da transacao.
         final TransactionProvider transactionProvider = new
                 TransactionProvider(activity, stoneTransaction, GlobalInformations.getPinpadFromListAt(0));
         transactionProvider.setWorkInBackground(false);
@@ -134,12 +150,12 @@ public class StoneUtils {
         transactionProvider.setConnectionCallback(new StoneCallbackInterface() {
             @Override
             public void onSuccess() {
-                respostaTransacaoListener.onRespostaTransacao(true, transactionProvider.getListOfErrors());
+                respostaTransacaoStoneListener.onRespostaTransacao(true, transactionProvider.getListOfErrors());
             }
 
             @Override
             public void onError() {
-                respostaTransacaoListener.onRespostaTransacao(false, transactionProvider.getListOfErrors());
+                respostaTransacaoStoneListener.onRespostaTransacao(false, transactionProvider.getListOfErrors());
             }
         });
         transactionProvider.execute();
@@ -166,4 +182,45 @@ public class StoneUtils {
         }
     }
 
+    private InstalmentTransactionEnum getParcelaStone(int qntParcelas) {
+        switch (qntParcelas) {
+            case A_VISTA:
+                return InstalmentTransactionEnum.ONE_INSTALMENT;
+            case DUAS_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.TWO_INSTALMENT_NO_INTEREST;
+            case TRES_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.THREE_INSTALMENT_NO_INTEREST;
+            case QUATRO_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.FOUR_INSTALMENT_NO_INTEREST;
+            case CINCO_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.FIVE_INSTALMENT_NO_INTEREST;
+            case SEIS_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.SIX_INSTALMENT_NO_INTEREST;
+            case SETE_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.SEVEN_INSTALMENT_NO_INTEREST;
+            case OITO_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.EIGHT_INSTALMENT_NO_INTEREST;
+            case NOVE_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.NINE_INSTALMENT_NO_INTEREST;
+            case DEZ_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.TEN_INSTALMENT_NO_INTEREST;
+            case ONZE_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.ELEVEN_INSTALMENT_NO_INTEREST;
+            case DOZE_PARCELAS_SEM_JUROS:
+                return InstalmentTransactionEnum.TWELVE_INSTALMENT_NO_INTEREST;
+            default:
+                return null;
+        }
+    }
+
+    private TypeOfTransactionEnum getTipoTransacaoStone(int tipoTransacao) {
+        switch (tipoTransacao) {
+            case DEBITO:
+                return TypeOfTransactionEnum.DEBIT;
+            case CREDITO:
+                return TypeOfTransactionEnum.CREDIT;
+            default:
+                return null;
+        }
+    }
 }
