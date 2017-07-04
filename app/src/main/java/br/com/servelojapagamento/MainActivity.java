@@ -3,9 +3,10 @@ package br.com.servelojapagamento;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -25,20 +26,21 @@ import java.util.Set;
 import br.com.servelojapagamento.adapter_recycler_view.AdapterRvListaDispositivos;
 import br.com.servelojapagamento.interfaces.ClickRecyclerViewListener;
 import br.com.servelojapagamento.interfaces.RespostaConexaoBlueetothPinpadListener;
-import br.com.servelojapagamento.interfaces.RespostaTransacaoListener;
 import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
+import br.com.servelojapagamento.modelo.UserMobile;
+import br.com.servelojapagamento.preferences.PrefsHelper;
 import br.com.servelojapagamento.utils.BluetoothUtils;
 import br.com.servelojapagamento.utils.StoneUtils;
-import stone.application.StoneStart;
+import br.com.servelojapagamento.utils.TransacaoEnum;
+import br.com.servelojapagamento.utils.TransacaoUtils;
+import br.com.servelojapagamento.utils.Utils;
+import br.com.servelojapagamento.webservice.ServelojaWebService;
 import stone.application.enums.ErrorsEnum;
-import stone.application.interfaces.StoneCallbackInterface;
-import stone.providers.ActiveApplicationProvider;
-import stone.user.UserModel;
 import stone.utils.Stone;
 
 public class MainActivity extends AppCompatActivity implements
         StatusBluetoothListener, ClickRecyclerViewListener,
-        RespostaConexaoBlueetothPinpadListener, RespostaTransacaoListener {
+        RespostaConexaoBlueetothPinpadListener {
 
     private String TAG;
     private BluetoothUtils bluetoothUtils;
@@ -49,6 +51,9 @@ public class MainActivity extends AppCompatActivity implements
     private ArrayList<BluetoothDevice> arrayListaDispositivo;
     private Button btAbrirDialogProcurarDispositivos;
     private StoneUtils stoneUtils;
+    private TransacaoUtils transacaoUtils;
+    private ServelojaWebService servelojaWebService;
+    private PrefsHelper prefsHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,14 +62,22 @@ public class MainActivity extends AppCompatActivity implements
         TAG = getClass().getSimpleName();
         bluetoothUtils = new BluetoothUtils(this);
         stoneUtils = new StoneUtils(this);
+        transacaoUtils = new TransacaoUtils(this);
+        servelojaWebService = new ServelojaWebService(this);
+        prefsHelper = new PrefsHelper(this);
+
         // passando como parâmetro o callback que compôem os três métodos:
         // onDispositivoEncontradoBluetooth, onEstadoAlteradoBluetooth, onProcuraDispositivoFinalizadaBluetooth
         bluetoothUtils.setStatusBluetoothListener(this);
         bluetoothUtils.iniciarServicoBluetooth();
 
+        // iniciando comunicação Stone
+        stoneUtils.iniciarStone(true);
+
         // setup views
         setupDialogParearDispositivos();
         btAbrirDialogProcurarDispositivos = (Button) findViewById(R.id.ac_main_bt_abrir_dialog);
+
 
         btAbrirDialogProcurarDispositivos.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -77,10 +90,29 @@ public class MainActivity extends AppCompatActivity implements
                 } else {
                     bluetoothUtils.solicitarAtivacaoBluetooth();
                 }
-
             }
         });
 
+         obterChaveAcesso();
+
+    }
+
+    private void obterChaveAcesso() {
+        String usuario = "admin";
+        String versaoApp = String.valueOf(Utils.getServelojaVersionApp(getApplicationContext()));
+        String versaoSdk = String.valueOf(Build.VERSION.SDK_INT);
+        String codChip = Utils.getIMEI(getApplicationContext());
+
+        UserMobile user = new UserMobile("0505424",
+                Utils.encriptar("123456"),
+                usuario, "");
+
+        user.setAppDetails(new UserMobile.App(codChip,
+                "Android", versaoSdk, versaoApp));
+
+        prefsHelper.salvarCodChip(codChip);
+
+        servelojaWebService.obterChaveAcesso(user);
     }
 
     @Override
@@ -188,7 +220,11 @@ public class MainActivity extends AppCompatActivity implements
     public void onEstadoAlteradoBluetooth(int estadoAtual, int estadoAnterior) {
         Log.d(TAG, "onEstadoAlteradoBluetooth: estadoAtual " + estadoAtual);
         Log.d(TAG, "onEstadoAlteradoBluetooth: estadoAnterior " + estadoAnterior);
-
+        if (estadoAtual == BluetoothDevice.BOND_BONDED && estadoAnterior == BluetoothDevice.BOND_BONDING) {
+            Log.d(TAG, "onEstadoAlteradoBluetooth: Removendo Pinpad");
+            prefsHelper.salvarPinpadModelo("");
+            prefsHelper.salvarPinpadMac("");
+        }
     }
 
     @Override
@@ -217,18 +253,13 @@ public class MainActivity extends AppCompatActivity implements
             // confirmação de conexão com a Pinpad
             if (Stone.isConnectedToPinpad()) {
                 Log.d(TAG, "onRespostaConexaoBlueetothPinpad: isConnectedToPinpad");
-                // passando como parâmetro o callback onRespostaTransacao
-//                stoneUtils.iniciarTransacao("20", this);
+//                 passando como parâmetro o callback onRespostaTransacao
+                transacaoUtils.iniciarTransacao("20", TransacaoEnum.TipoTransacao.CREDITO,
+                        TransacaoEnum.QntParcelas.A_VISTA, false);
             }
         } else {
             //
         }
-    }
-
-    @Override
-    public void onRespostaTransacao(boolean status, List<ErrorsEnum> listaErros) {
-        Log.d(TAG, "onRespostaTransacao: Status " + status);
-        Log.d(TAG, "onRespostaTransacao: Erros " + listaErros.toString());
     }
 
 }
