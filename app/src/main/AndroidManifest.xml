@@ -8,8 +8,11 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--necessário para baixar as tabelas-->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
 
     <application

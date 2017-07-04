@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/ServeLojaPagamento.iml" filepath="$PROJECT_DIR$/ServeLojaPagamento.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/servelojapagamento.iml" filepath="$PROJECT_DIR$/servelojapagamento.iml" />
     </modules>
   </component>
 </project>
