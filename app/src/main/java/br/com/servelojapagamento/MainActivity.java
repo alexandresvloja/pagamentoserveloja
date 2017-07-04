@@ -2,6 +2,7 @@ package br.com.servelojapagamento;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -28,7 +29,11 @@ import br.com.servelojapagamento.interfaces.RespostaTransacaoListener;
 import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
 import br.com.servelojapagamento.utils.BluetoothUtils;
 import br.com.servelojapagamento.utils.StoneUtils;
+import stone.application.StoneStart;
 import stone.application.enums.ErrorsEnum;
+import stone.application.interfaces.StoneCallbackInterface;
+import stone.providers.ActiveApplicationProvider;
+import stone.user.UserModel;
 import stone.utils.Stone;
 
 public class MainActivity extends AppCompatActivity implements
@@ -37,7 +42,6 @@ public class MainActivity extends AppCompatActivity implements
 
     private String TAG;
     private BluetoothUtils bluetoothUtils;
-    private final int SOLICITACAO_PERMISSAO_BLUETOOTH_PRIVILEGED = 1;
     private MaterialDialog dialogParearDispositivos;
     private RecyclerView dialogListaDispositivosRv;
     private RelativeLayout dialogListaDispositivosRlCarregando;
@@ -53,8 +57,6 @@ public class MainActivity extends AppCompatActivity implements
         TAG = getClass().getSimpleName();
         bluetoothUtils = new BluetoothUtils(this);
         stoneUtils = new StoneUtils(this);
-//        stoneUtils.iniciarStone(true);
-        StoneUtils.getInstance().iniciarStone(true);
         // passando como parâmetro o callback que compôem os três métodos:
         // onDispositivoEncontradoBluetooth, onEstadoAlteradoBluetooth, onProcuraDispositivoFinalizadaBluetooth
         bluetoothUtils.setStatusBluetoothListener(this);
@@ -67,21 +69,33 @@ public class MainActivity extends AppCompatActivity implements
         btAbrirDialogProcurarDispositivos.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                addDispositivosJaPareados();
-                bluetoothUtils.iniciarProcuraDispositivos();
-                dialogListaDispositivosRlCarregando.setVisibility(View.VISIBLE);
-                dialogParearDispositivos.show();
+                if (bluetoothUtils.checkBluetoothAtivado()) {
+                    addDispositivosJaPareados();
+                    bluetoothUtils.iniciarProcuraDispositivos();
+                    dialogListaDispositivosRlCarregando.setVisibility(View.VISIBLE);
+                    dialogParearDispositivos.show();
+                } else {
+                    bluetoothUtils.solicitarAtivacaoBluetooth();
+                }
+
             }
         });
 
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.d(TAG, "onRequestPermissionsResult: requestCode " + requestCode);
-        for (String permission : permissions) {
-            Log.d(TAG, "onRequestPermissionsResult: permissions " + permission.toString());
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG, "onActivityResult: requestCode " + requestCode);
+        if (requestCode == BluetoothUtils.SOLICITACAO_HABILITAR_BLUETOOTH) {
+            Log.d(TAG, "onActivityResult: resultCode " + resultCode);
+            // bluetooth ativado
+            if (resultCode == -1) {
+                addDispositivosJaPareados();
+                bluetoothUtils.iniciarProcuraDispositivos();
+                dialogListaDispositivosRlCarregando.setVisibility(View.VISIBLE);
+                dialogParearDispositivos.show();
+            }
         }
     }
 

@@ -19,7 +19,7 @@ import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
 public class BluetoothUtils {
 
     private String TAG;
-    private final int SOLICITACAO_HABILITAR_BLUETOOTH = 1000;
+    public static final int SOLICITACAO_HABILITAR_BLUETOOTH = 1000;
     private Activity activity;
     private BluetoothAdapter bluetoothAdapter;
     private StatusBluetoothListener statusBluetoothListener;
