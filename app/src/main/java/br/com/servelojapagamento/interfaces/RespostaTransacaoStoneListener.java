@@ -8,7 +8,7 @@ import stone.application.enums.ErrorsEnum;
  * Created by Alexandre on 03/07/2017.
  */
 
-public interface RespostaTransacaoListener {
+public interface RespostaTransacaoStoneListener {
 
     void onRespostaTransacao(boolean status, List<ErrorsEnum> listaErros);
 
