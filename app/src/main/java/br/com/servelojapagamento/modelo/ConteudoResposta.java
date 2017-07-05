@@ -2,6 +2,8 @@ package br.com.servelojapagamento.modelo;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.Arrays;
+
 /**
  * Created by alexandre on 19/06/2017.
  */
@@ -70,4 +72,14 @@ public class ConteudoResposta {
         this.mensagemRetorno = mensagemRetorno;
     }
 
+    @Override
+    public String toString() {
+        return "ConteudoResposta{" +
+                "codRetorno=" + codRetorno +
+                ", numeroAutorizacao='" + numeroAutorizacao + '\'' +
+                ", mensagemRetorno='" + mensagemRetorno + '\'' +
+                ", idTransacao=" + idTransacao +
+                ", dsErro=" + Arrays.toString(dsErro) +
+                '}';
+    }
 }

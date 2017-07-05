@@ -27,8 +27,36 @@ public class ParamsRegistrarTransacao {
     private String dddTelefone;
     private String numTelefone;
     private String comprovante;
+    private String dataValidadeCartao;
+    private String numBinCartao;
+    private String imei;
+    private String ip;
+    private String cpfCNPJ;
+    private String codSeguracaCartao;
+    private String senhaCartao;
+    private String nomeTitularCartao;
+    private int codFranquia;
+    private String cpfCnpjAdesao;
+    private String nomeTitularAdesao;
+    private boolean utilizouLeitor;
+    private boolean clienteInformouCartaoInvalido;
 
     public ParamsRegistrarTransacao() {
+        // reset campos
+        descricao = "";
+        pinPadId = "";
+        pinPadMac = "";
+        latLng = "";
+        nsuHost = "";
+        nsuSitef = "";
+        codAutorizacao = "";
+        problemas = "";
+        dddTelefone = "";
+        numTelefone = "";
+        comprovante = "";
+        nomeTitularAdesao = "";
+        cpfCnpjAdesao = "";
+        codFranquia = 0;
     }
 
     public ParamsRegistrarTransacao(
@@ -75,6 +103,110 @@ public class ParamsRegistrarTransacao {
         this.dddTelefone = dddTelefone;
         this.numTelefone = numTelefone;
         this.comprovante = comprovante;
+    }
+
+    public int getCodFranquia() {
+        return codFranquia;
+    }
+
+    public void setCodFranquia(int codFranquia) {
+        this.codFranquia = codFranquia;
+    }
+
+    public String getCpfCnpjAdesao() {
+        return cpfCnpjAdesao;
+    }
+
+    public void setCpfCnpjAdesao(String cpfCnpjAdesao) {
+        this.cpfCnpjAdesao = cpfCnpjAdesao;
+    }
+
+    public String getNomeTitularAdesao() {
+        return nomeTitularAdesao;
+    }
+
+    public void setNomeTitularAdesao(String nomeTitularAdesao) {
+        this.nomeTitularAdesao = nomeTitularAdesao;
+    }
+
+    public boolean isUtilizouLeitor() {
+        return utilizouLeitor;
+    }
+
+    public void setUtilizouLeitor(boolean utilizouLeitor) {
+        this.utilizouLeitor = utilizouLeitor;
+    }
+
+    public boolean isClienteInformouCartaoInvalido() {
+        return clienteInformouCartaoInvalido;
+    }
+
+    public void setClienteInformouCartaoInvalido(boolean clienteInformouCartaoInvalido) {
+        this.clienteInformouCartaoInvalido = clienteInformouCartaoInvalido;
+    }
+
+    public String getImei() {
+        return imei;
+    }
+
+    public void setImei(String imei) {
+        this.imei = imei;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public String getCpfCNPJ() {
+        return cpfCNPJ;
+    }
+
+    public void setCpfCNPJ(String cpfCNPJ) {
+        this.cpfCNPJ = cpfCNPJ;
+    }
+
+    public String getCodSeguracaCartao() {
+        return codSeguracaCartao;
+    }
+
+    public void setCodSeguracaCartao(String codSeguracaCartao) {
+        this.codSeguracaCartao = codSeguracaCartao;
+    }
+
+    public String getSenhaCartao() {
+        return senhaCartao;
+    }
+
+    public void setSenhaCartao(String senhaCartao) {
+        this.senhaCartao = senhaCartao;
+    }
+
+    public String getNomeTitularCartao() {
+        return nomeTitularCartao;
+    }
+
+    public void setNomeTitularCartao(String nomeTitularCartao) {
+        this.nomeTitularCartao = nomeTitularCartao;
+    }
+
+    public String getNumBinCartao() {
+        return numBinCartao;
+    }
+
+    public void setNumBinCartao(String numBinCartao) {
+        this.numBinCartao = numBinCartao;
+    }
+
+    public String getDataValidadeCartao() {
+        return dataValidadeCartao;
+    }
+
+    public void setDataValidadeCartao(String dataValidadeCartao) {
+        this.dataValidadeCartao = dataValidadeCartao;
     }
 
     public String getNumCartao() {
@@ -248,7 +380,7 @@ public class ParamsRegistrarTransacao {
 
     @Override
     public String toString() {
-        return "ParamsRegistrarTransacao{" +
+        return "ParamsRegistrarTransacao{" + "\n" +
                 "chaveAcesso='" + chaveAcesso + '\'' + "\n" +
                 ", valor='" + valor + '\'' + "\n" +
                 ", numParcelas=" + numParcelas + "\n" +
@@ -270,7 +402,21 @@ public class ParamsRegistrarTransacao {
                 ", dddTelefone='" + dddTelefone + '\'' + "\n" +
                 ", numTelefone='" + numTelefone + '\'' + "\n" +
                 ", comprovante='" + comprovante + '\'' + "\n" +
+                ", dataValidadeCartao='" + dataValidadeCartao + '\'' + "\n" +
+                ", numBinCartao='" + numBinCartao + '\'' + "\n" +
+                ", imei='" + imei + '\'' + "\n" +
+                ", ip='" + ip + '\'' + "\n" +
+                ", cpfCNPJ='" + cpfCNPJ + '\'' + "\n" +
+                ", codSeguracaCartao='" + codSeguracaCartao + '\'' + "\n" +
+                ", senhaCartao='" + senhaCartao + '\'' + "\n" +
+                ", nomeTitularCartao='" + nomeTitularCartao + '\'' + "\n" +
+                ", codFranquia=" + codFranquia + "\n" +
+                ", cpfCnpjAdesao='" + cpfCnpjAdesao + '\'' + "\n" +
+                ", nomeTitularAdesao='" + nomeTitularAdesao + '\'' + "\n" +
+                ", utilizouLeitor=" + utilizouLeitor + "\n" +
+                ", clienteInformouCartaoInvalido=" + clienteInformouCartaoInvalido + "\n" +
                 '}';
     }
+
 
 }
