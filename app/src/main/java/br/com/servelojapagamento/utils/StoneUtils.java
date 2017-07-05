@@ -6,13 +6,19 @@ import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.listener.DexterError;
+import com.karumi.dexter.listener.PermissionRequestErrorListener;
+import com.karumi.dexter.listener.multi.DialogOnAnyDeniedMultiplePermissionsListener;
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
+
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
 import br.com.servelojapagamento.interfaces.RespostaConexaoBlueetothPinpadListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoStoneListener;
 import br.com.servelojapagamento.preferences.PrefsHelper;
-import permissions.dispatcher.NeedsPermission;
 import stone.application.StoneStart;
 import stone.application.enums.InstalmentTransactionEnum;
 import stone.application.enums.TypeOfTransactionEnum;
@@ -61,7 +67,6 @@ public class StoneUtils {
         this.prefsHelper = new PrefsHelper(activity);
     }
 
-    @NeedsPermission(Manifest.permission.READ_PHONE_STATE)
     public void iniciarStone(boolean modoDesenvolvedor) {
         this.modoDesenvolvedor = modoDesenvolvedor;
         List<UserModel> user = StoneStart.init(activity);
@@ -93,7 +98,31 @@ public class StoneUtils {
         // Seta o modo de desenvolvedor
         if (modoDesenvolvedor)
             Stone.developerMode();
+    }
 
+    public void checkPermissoes() {
+        MultiplePermissionsListener dialogMultiplePermissionsListener =
+                DialogOnAnyDeniedMultiplePermissionsListener.Builder
+                        .withContext(activity)
+                        .withTitle("Permissão negada")
+                        .withMessage("Para iniciar a sincronização com a Serveloja, é necessário aceitar esta permissão.")
+                        .withButtonText(android.R.string.ok)
+                        .build();
+        Dexter.withActivity(activity).withPermissions(
+                Manifest.permission.READ_PHONE_STATE,
+                Manifest.permission.ACCESS_NETWORK_STATE,
+                Manifest.permission.INTERNET,
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.ACCESS_COARSE_LOCATION)
+                .withListener(dialogMultiplePermissionsListener)
+                .withErrorListener(new PermissionRequestErrorListener() {
+                    @Override
+                    public void onError(DexterError error) {
+                        Log.d(TAG, "onError: " + error.toString());
+                    }
+                })
+                .check();
     }
 
     public void iniciarComunicacaoPinpad(final BluetoothDevice dispositivo, final RespostaConexaoBlueetothPinpadListener
@@ -101,32 +130,68 @@ public class StoneUtils {
         try {
             Log.d(TAG, "iniciarComunicacaoPinpad: ");
             this.respostaConexaoBlueetothPinpadListener = respostaConexaoBlueetothPinpadListener;
-            PinpadObject pinpadObject = new PinpadObject(dispositivo.getName(), dispositivo.getAddress(), false);
-            final BluetoothConnectionProvider bluetoothConnectionProvider =
-                    new BluetoothConnectionProvider(activity, pinpadObject);
-            bluetoothConnectionProvider.setDialogMessage("Criando conexao com o pinpad selecionado"); // Mensagem exibida do dialog.
-            bluetoothConnectionProvider.setWorkInBackground(false); // Informa que haverá um feedback para o usuário.
-            bluetoothConnectionProvider.setConnectionCallback(new StoneCallbackInterface() {
-                @Override
-                public void onSuccess() {
-                    Log.d(TAG, "onSuccess: ");
-                    respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(true,
-                            bluetoothConnectionProvider.getListOfErrors());
-                    prefsHelper.salvarPinpadMac(dispositivo.getAddress());
-                    prefsHelper.salvarPinpadModelo(dispositivo.getName());
-                }
+            if (checkPinpadConectado()) {
+                Toast.makeText(activity, "Pinpad já conectada.", Toast.LENGTH_SHORT).show();
+            } else {
+                PinpadObject pinpadObject = new PinpadObject(dispositivo.getName(), dispositivo.getAddress(), false);
+                final BluetoothConnectionProvider bluetoothConnectionProvider =
+                        new BluetoothConnectionProvider(activity, pinpadObject);
+                bluetoothConnectionProvider.setDialogMessage("Criando conexao com o pinpad selecionado"); // Mensagem exibida do dialog.
+                bluetoothConnectionProvider.setWorkInBackground(false); // Informa que haverá um feedback para o usuário.
+                bluetoothConnectionProvider.setConnectionCallback(new StoneCallbackInterface() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "onSuccess: ");
+                        respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(true,
+                                bluetoothConnectionProvider.getListOfErrors());
+                        prefsHelper.salvarPinpadMac(dispositivo.getAddress());
+                        prefsHelper.salvarPinpadModelo(dispositivo.getName());
+                        parearDispositivo(dispositivo);
+                    }
 
-                @Override
-                public void onError() {
-                    Log.d(TAG, "onError: ");
-                    respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(true,
-                            bluetoothConnectionProvider.getListOfErrors());
-                }
-            });
-            bluetoothConnectionProvider.execute();
+                    @Override
+                    public void onError() {
+                        Log.d(TAG, "onError: ");
+                        respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(true,
+                                bluetoothConnectionProvider.getListOfErrors());
+                    }
+                });
+                bluetoothConnectionProvider.execute();
+            }
         } catch (Exception e) {
             Log.d(TAG, "iniciarComunicacaoPinpad: Exception " + e.getMessage());
         }
+    }
+
+    private void parearDispositivo(BluetoothDevice dispositivo) {
+        try {
+            Method method = dispositivo.getClass().getMethod("createBond", (Class[]) null);
+            method.invoke(dispositivo, (Object[]) null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * verifica se o cartÃ£o lido pela TARJA, Ã© permitido pela STONE, e assim nÃ£o permitir a
+     * conclusÃ£o da transaÃ§Ã£o pois o mesmo Ã© aceito com CHIP
+     *
+     * @param bandeira
+     * @return
+     */
+    public boolean checkBandeiraPermitidaPelaStone(String bandeira) {
+        if ((bandeira.toLowerCase().equals("visa electron")
+                || bandeira.toLowerCase().equals("visa")
+                || bandeira.toLowerCase().equals("mastercard")
+                || bandeira.toLowerCase().equals("maestro"))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean checkPinpadConectado() {
+        return Stone.isConnectedToPinpad();
     }
 
     public void iniciarTransacao(String valor, int tipoTransacao, int qntParcelas,
@@ -137,7 +202,7 @@ public class StoneUtils {
         stoneTransaction.setEmailClient(null);
         stoneTransaction.setRequestId("");
         stoneTransaction.setUserModel(GlobalInformations.getUserModel(0));
-        // tipo de transação (débito ou crédito)
+        // tipo de transaÃ§Ã£o (dÃ©bito ou crÃ©dito)
         stoneTransaction.setTypeOfTransaction(getTipoTransacaoStone(tipoTransacao));
         // quantidade de parcelas.
         stoneTransaction.setInstalmentTransactionEnum(getParcelaStone(qntParcelas));
@@ -150,12 +215,12 @@ public class StoneUtils {
         transactionProvider.setConnectionCallback(new StoneCallbackInterface() {
             @Override
             public void onSuccess() {
-                respostaTransacaoStoneListener.onRespostaTransacao(true, transactionProvider.getListOfErrors());
+                respostaTransacaoStoneListener.onRespostaTransacaoStone(true, transactionProvider);
             }
 
             @Override
             public void onError() {
-                respostaTransacaoStoneListener.onRespostaTransacao(false, transactionProvider.getListOfErrors());
+                respostaTransacaoStoneListener.onRespostaTransacaoStone(false, transactionProvider);
             }
         });
         transactionProvider.execute();
