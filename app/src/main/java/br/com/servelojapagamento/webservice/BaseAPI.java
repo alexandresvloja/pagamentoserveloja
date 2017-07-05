@@ -7,6 +7,7 @@ import br.com.servelojapagamento.modelo.ConteudoResposta;
 import br.com.servelojapagamento.modelo.ObterChaveAcessoResposta;
 import br.com.servelojapagamento.modelo.PedidoPinPadResposta;
 import br.com.servelojapagamento.modelo.UserMobile;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Field;
@@ -30,28 +31,34 @@ public interface BaseAPI {
     Call<ObterChaveAcessoResposta> obterChaveAcesso(@Body Map<String, UserMobile> user);
 
     @FormUrlEncoded
-    @POST("EfetuarTransacaoMaquininhaESitef")
+    @POST("EfetuarVendaCreditoMobile")
     Call<ConteudoResposta> realizarTransacaoSegura(@Field("ChaveAcesso") String chaveAcesso,
                                                    @Field("CodigoChip") String codChip,
                                                    @Field("Bandeira") String bandeira,
                                                    @Field("CpfCnpjComprador") String cpfCnpjComprador,
-                                                   @Field("NumeroCartao") String numeroCartao,
+                                                   @Field("NrCartao") String numeroCartao,
                                                    @Field("CodSeguranca") String codSeguranca,
                                                    @Field("DataValidade") String dataValidade,
                                                    @Field("Valor") String valor,
-                                                   @Field("QuantidadeParcelas") String quantidadeParcelas,
+                                                   @Field("QtParcela") String quantidadeParcelas,
                                                    @Field("DDDCelular") String dDDCelular,
-                                                   @Field("NumeroCelular") String numeroCelular,
+                                                   @Field("NrCelular") String numeroCelular,
                                                    @Field("EnderecoIPComprador") String enderecoIPComprador,
-                                                   @Field("Observacao") String observacao,
+                                                   @Field("DsObservacao") String observacao,
+                                                   @Field("CodigoFranquia") int codigoFranquia,
+                                                   @Field("CpfCnpjAdesao") String cpfCnpjAdesao,
+                                                   @Field("NomeTitularAdesao") String nomeTitularAdesao,
+                                                   @Field("UtilizouLeitor") boolean utilizouLeitor,
                                                    @Field("Origem") String origem,
+                                                   @Field("ClienteInformadoCartaoInvalido") boolean clienteInformadoCartaoInvalido,
                                                    @Field("SenhaCartao") String senhaCartao,
                                                    @Field("LatitudeLongitude") String latitudeLongitude,
                                                    @Field("ValorSemTaxas") String valorSemTaxas,
-                                                   @Field("PinpadId") String pinpadId,
-                                                   @Field("PinpadMac") String pinpadMac,
-                                                   @Field("NomeTitular") String nomeTitular,
-                                                   @Field("NrCartaoComprovante") String nrCartaoComprovante);
+                                                   @Field("nmTitular") String nomeTitular,
+                                                   @Field("OutrasBandeiras") boolean outrasBandeiras);
+
+    @POST("EfetuarVendaCreditoMobile")
+    Call<ConteudoResposta> realizarTransacaoSeguraJson(@Body RequestBody chaveAcesso);
 
     @FormUrlEncoded
     @POST("RegistrarTransacaoPinPad")

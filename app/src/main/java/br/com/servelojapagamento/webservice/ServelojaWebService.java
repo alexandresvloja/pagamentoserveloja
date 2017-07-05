@@ -3,16 +3,23 @@ package br.com.servelojapagamento.webservice;
 import android.app.Activity;
 import android.util.Log;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import br.com.servelojapagamento.interfaces.RespostaTransacaoRegistradaServelojaListener;
+import br.com.servelojapagamento.modelo.ConteudoResposta;
 import br.com.servelojapagamento.modelo.ObterChaveAcessoResposta;
 import br.com.servelojapagamento.modelo.ParamsRegistrarTransacao;
 import br.com.servelojapagamento.modelo.PedidoPinPadResposta;
 import br.com.servelojapagamento.modelo.UserMobile;
 import br.com.servelojapagamento.preferences.PrefsHelper;
-import br.com.servelojapagamento.utils.Utils;
+import br.com.servelojapagamento.utils.LoggingInterceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -25,7 +32,9 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ServelojaWebService {
 
-    private final String URL = "http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx/";
+    private final String URL = "http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx";
+    //    http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx/
+//    private final String URL = "https://www.sistemaserveloja.com.br/ServicosWeb/Versao/1.13/Mobile.asmx";
     private Retrofit retrofit;
     private String TAG;
     private PrefsHelper prefsHelper;
@@ -34,7 +43,6 @@ public class ServelojaWebService {
     public ServelojaWebService(Activity activity) {
         this.TAG = getClass().getSimpleName();
         this.prefsHelper = new PrefsHelper(activity);
-        iniciarRetrofit();
     }
 
     private void iniciarRetrofit() {
@@ -47,26 +55,28 @@ public class ServelojaWebService {
 
     public void registrarTransacao(ParamsRegistrarTransacao paramsRegistrarTransacao,
                                    final RespostaTransacaoRegistradaServelojaListener respostaTransacaoRegistradaServelojaListener) {
+        iniciarRetrofit();
         Log.d(TAG, "registrarTransacao: ");
+        Log.d(TAG, "registrarTransacao: " + paramsRegistrarTransacao);
         BaseAPI baseAPI = retrofit.create(BaseAPI.class);
         final Call<PedidoPinPadResposta> call = baseAPI.registrarTransacaoPinPad(
                 paramsRegistrarTransacao.getChaveAcesso(),
                 paramsRegistrarTransacao.getValor(),
-                Integer.valueOf(paramsRegistrarTransacao.getNumParcelas()),
+                paramsRegistrarTransacao.getNumParcelas(),
                 paramsRegistrarTransacao.getDescricao(),
                 paramsRegistrarTransacao.getTipoTransacao(),
                 paramsRegistrarTransacao.getPinPadId(),
                 paramsRegistrarTransacao.getPinPadMac(),
                 paramsRegistrarTransacao.getLatLng(),
                 paramsRegistrarTransacao.getValorSemTaxas(),
-                Utils.encriptar(paramsRegistrarTransacao.getBandeiraCartao()),
+                paramsRegistrarTransacao.getBandeiraCartao(),
                 paramsRegistrarTransacao.getNsuHost(),
                 paramsRegistrarTransacao.getNsuSitef(),
                 paramsRegistrarTransacao.getCodAutorizacao(),
                 paramsRegistrarTransacao.isUsoTarja(),
                 paramsRegistrarTransacao.getStatusTransacao(),
                 paramsRegistrarTransacao.getDataTransacao(),
-                Utils.encriptar(paramsRegistrarTransacao.getNumCartao()),
+                paramsRegistrarTransacao.getNumCartao(),
                 paramsRegistrarTransacao.getProblemas(),
                 paramsRegistrarTransacao.getDddTelefone(),
                 paramsRegistrarTransacao.getNumTelefone(),
@@ -76,12 +86,13 @@ public class ServelojaWebService {
             @Override
             public void onResponse(Call<PedidoPinPadResposta> call, Response<PedidoPinPadResposta> response) {
                 Log.d(TAG, "onResponse: ");
+
                 if (response != null && response.body() != null) {
-                    PedidoPinPadResposta pedidoPinPadResposta = response.body();
-                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoRegistrada(true,
-                            pedidoPinPadResposta, "");
+                    PedidoPinPadResposta pinPadResposta = response.body();
+                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoRegistradaServeloja(true,
+                            pinPadResposta, "");
                 } else {
-                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoRegistrada(false,
+                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoRegistradaServeloja(false,
                             null, "Erro de comunicação com a Serveloja, tente novamente. | response estava null.");
                 }
             }
@@ -89,12 +100,13 @@ public class ServelojaWebService {
             @Override
             public void onFailure(Call<PedidoPinPadResposta> call, Throwable t) {
                 Log.d(TAG, "onFailure: ");
-                respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoRegistrada(false, null, t.getMessage());
+                respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoRegistradaServeloja(false, null, t.getMessage());
             }
         });
     }
 
     public void obterChaveAcesso(final UserMobile user) {
+        iniciarRetrofit();
         BaseAPI baseAPI = retrofit.create(BaseAPI.class);
 
         Map<String, UserMobile> request = new HashMap<String, UserMobile>();
@@ -130,53 +142,78 @@ public class ServelojaWebService {
         prefsHelper.salvarChaveAcesso(r.getChaveAcesso());
         prefsHelper.salvarDataExpiracao(r.getDataExpiracao());
         prefsHelper.salvarUsuarioChave(r.getUsuarioChave());
+    }
 
-//        StringBuilder franquiasString = new StringBuilder();
-//        StringBuilder franquiasCod = new StringBuilder();
-//
-//        if (r.franquias.length > 1) {
-//            for (int i = 0; i < r.franquias.length; i++) {
-//                franquiasString.append(r.franquias[i].nomeFranquia
-//                        + "|");
-//                franquiasCod.append(r.franquias[i].codigoFranquia
-//                        + "|");
-//            }
-//            editor.putString("Franquias", franquiasString.toString());
-//            editor.putString("FranquiasCod", franquiasCod.toString());
-//            editor.remove("codigoFranquia");
-//            editor.remove("nomeFranquia");
-//
-//        } else if (r.franquias.length == 1) {
-//            editor.putString("codigoFranquia",
-//                    r.franquias[0].codigoFranquia);
-//            editor.putString("nomeFranquia",
-//                    r.franquias[0].nomeFranquia);
-//        } else {
-//            editor.remove("codigoFranquia");
-//            editor.remove("nomeFranquia");
-//        }
-//
-//        if (r.codigoPerfil.equals("1")) {
-//            editor.putString("Perfil", "Consultor");
-//        } else if (r.codigoPerfil.equals("2")) {
-//            editor.putString("Perfil", "Lojista");
-//        } else if (r.codigoPerfil.equals("3")) {
-//            editor.putString("Perfil", "Admin");
-//        }
-//
-//        // editor.putBoolean("PodeVenderEstrangeiro",
-//        // cca.podeVenderParaEstrangeiro);
-//        String permissoes = "";
-//        for (int i = 0; i < r.permissoes.length; i++) {
-//            if (i + 1 == r.permissoes.length) {
-//                permissoes += r.permissoes[i];
-//            } else {
-//                permissoes += r.permissoes[i] + ",";
-//            }
-//        }
-//        editor.putString("valorObrigatoriedadeDocumento", r.valorObrigatoriedadeDocumento);
-//        editor.putString("PermissoesUsuario", permissoes);
-//        editor.commit();
+    public void registrarTransacaoSegura(ParamsRegistrarTransacao paramsRegistrarTransacao) {
+        JSONObject jsonObj = new JSONObject();
+
+        try {
+            jsonObj.put("ChaveAcesso", paramsRegistrarTransacao.getChaveAcesso());
+            jsonObj.put("CodChip", paramsRegistrarTransacao.getImei());
+            jsonObj.put("Bandeira", paramsRegistrarTransacao.getBandeiraCartao());
+            jsonObj.put("CpfCnpjComprador", paramsRegistrarTransacao.getCpfCNPJ());
+            jsonObj.put("nmTitular", paramsRegistrarTransacao.getNomeTitularCartao());
+            jsonObj.put("NrCartao", paramsRegistrarTransacao.getNumCartao());
+            jsonObj.put("CodSeguranca", paramsRegistrarTransacao.getCodSeguracaCartao());
+            jsonObj.put("DataValidade", paramsRegistrarTransacao.getDataValidadeCartao());
+            jsonObj.put("Valor", paramsRegistrarTransacao.getValor());
+            jsonObj.put("ValorSemTaxas", paramsRegistrarTransacao.getValorSemTaxas());
+            jsonObj.put("QtParcela", paramsRegistrarTransacao.getNumParcelas());
+            jsonObj.put("DDDCelular", paramsRegistrarTransacao.getDddTelefone());
+            jsonObj.put("NrCelular", paramsRegistrarTransacao.getNumTelefone());
+            jsonObj.put("EnderecoIPComprador", paramsRegistrarTransacao.getIp());
+            jsonObj.put("DsObservacao", paramsRegistrarTransacao.getDescricao());
+            jsonObj.put("CodigoFranquia", "0");
+            jsonObj.put("CpfCnpjAdesao", paramsRegistrarTransacao.getCpfCnpjAdesao());
+            jsonObj.put("NomeTitularAdesao", "");
+            jsonObj.put("UtilizouLeitor", false);
+            jsonObj.put("Origem", "A");
+            jsonObj.put("ClienteInformadoCartaoInvalido", false);
+            jsonObj.put("LatitudeLongitude", paramsRegistrarTransacao.getLatLng());
+            jsonObj.put("SenhaCartao", "");
+            jsonObj.put("OutrasBandeiras", true);
+
+            Retrofit retrofit = new Retrofit
+                    .Builder()
+                    .baseUrl("http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx/")
+                    .client(new OkHttpClient.Builder()
+                            .addInterceptor(new LoggingInterceptor())
+                            .connectTimeout(30, TimeUnit.SECONDS)
+                            .readTimeout(30, TimeUnit.SECONDS)
+                            .writeTimeout(30, TimeUnit.SECONDS)
+                            .build())
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+
+            BaseAPI baseAPI = retrofit.create(BaseAPI.class);
+
+            RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json; charset=utf-8"),
+                    (jsonObj).toString());
+
+            final Call<ConteudoResposta> call = baseAPI.realizarTransacaoSeguraJson(body);
+
+            call.enqueue(new Callback<ConteudoResposta>() {
+                @Override
+                public void onResponse(Call<ConteudoResposta> call, Response<ConteudoResposta> response) {
+                    if (response != null && response.body() != null) {
+                        Log.d(TAG, "onResponse: " + response.body());
+
+
+                    } else if (response != null) {
+                        Log.d(TAG, "onResponse: response " + response.toString());
+                        Log.d(TAG, "onResponse: message " + response.message());
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ConteudoResposta> call, Throwable t) {
+                    Log.d(TAG, "onFailure: " + t.getMessage());
+                }
+            });
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
 }
