@@ -27,6 +27,10 @@ import br.com.servelojapagamento.interfaces.ClickRecyclerViewListener;
 import br.com.servelojapagamento.interfaces.RespostaConexaoBlueetothPinpadListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoListener;
 import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
+import br.com.servelojapagamento.mundipagg.MundipaggWebServiceUtils;
+import br.com.servelojapagamento.mundipagg.ParamsCriarTokenCartao;
+import br.com.servelojapagamento.mundipagg.ParamsCriarTokenEndereco;
+import br.com.servelojapagamento.mundipagg.ParamsCriarTransacaoSemToken;
 import br.com.servelojapagamento.utils.BluetoothUtils;
 import br.com.servelojapagamento.utils.StoneUtils;
 import stone.application.StoneStart;
@@ -81,6 +85,38 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
+        ParamsCriarTransacaoSemToken paramsCriarTransacaoSemToken = new ParamsCriarTransacaoSemToken();
+        paramsCriarTransacaoSemToken.setCartaoAno("2023");
+        paramsCriarTransacaoSemToken.setCartaoBandeira("VISA");
+        paramsCriarTransacaoSemToken.setCartaoCvv("123");
+        paramsCriarTransacaoSemToken.setCartaoMes("10");
+        paramsCriarTransacaoSemToken.setCartaoNumero("4111111111111111");
+        paramsCriarTransacaoSemToken.setNumParcela(4);
+        paramsCriarTransacaoSemToken.setIdTransacao("231");
+        paramsCriarTransacaoSemToken.setValor("10000");
+        paramsCriarTransacaoSemToken.setCartaoNome("ALEXANDRE SANTOS");
+
+        MundipaggWebServiceUtils mundipaggWebServiceUtils = new MundipaggWebServiceUtils();
+//        mundipaggWebServiceUtils.criarTransacaoSemToken(paramsCriarTransacaoSemToken);
+//        mundipaggWebServiceUtils.consultarTransacaoPorChavePedido("93825be2-f1e2-475e-a4c6-1fa57c8c5937");
+//        mundipaggWebServiceUtils.consultarTransacaoPorReferenciaPedido("alex");
+//        mundipaggWebServiceUtils.cancelarTransacaoPorChavePedido("93825be2-f1e2-475e-a4c6-1fa57c8c5937");
+
+        ParamsCriarTokenCartao paramsCriarTokenCartao = new ParamsCriarTokenCartao();
+        paramsCriarTokenCartao.setCartaoNumero("41111111111111111");
+        paramsCriarTokenCartao.setCartaoMes("10");
+        paramsCriarTokenCartao.setCartaoAno("2020");
+        paramsCriarTokenCartao.setCartaoBandeira("VISA");
+        paramsCriarTokenCartao.setCartaoCheck(true);
+        paramsCriarTokenCartao.setCartaoNome("ALEXANDRE ANDRADE");
+
+        ParamsCriarTokenEndereco paramsCriarTokenEndereco = new ParamsCriarTokenEndereco();
+        paramsCriarTokenEndereco.setEnderecoDescricao("Rua H");
+        paramsCriarTokenEndereco.setEnderecoPais("Brasil");
+        paramsCriarTokenEndereco.setEnderecoCidade("Aracaju");
+
+//        mundipaggWebServiceUtils.criarToken(paramsCriarTokenCartao, paramsCriarTokenEndereco);
+        mundipaggWebServiceUtils.consultarToken("19160115-9704-4306-8664-725c82759667");
     }
 
     @Override
