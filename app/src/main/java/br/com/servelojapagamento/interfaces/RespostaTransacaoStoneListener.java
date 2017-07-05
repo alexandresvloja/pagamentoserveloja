@@ -1,8 +1,6 @@
 package br.com.servelojapagamento.interfaces;
 
-import java.util.List;
-
-import stone.application.enums.ErrorsEnum;
+import stone.providers.TransactionProvider;
 
 /**
  * Created by Alexandre on 03/07/2017.
@@ -10,6 +8,6 @@ import stone.application.enums.ErrorsEnum;
 
 public interface RespostaTransacaoStoneListener {
 
-    void onRespostaTransacao(boolean status, List<ErrorsEnum> listaErros);
+    void onRespostaTransacaoStone(boolean status, TransactionProvider transactionProvider);
 
 }

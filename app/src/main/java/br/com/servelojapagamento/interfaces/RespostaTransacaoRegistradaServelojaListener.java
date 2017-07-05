@@ -8,6 +8,6 @@ import br.com.servelojapagamento.modelo.PedidoPinPadResposta;
 
 public interface RespostaTransacaoRegistradaServelojaListener {
 
-    void onRespostaTransacaoRegistrada(boolean status, PedidoPinPadResposta pedidoPinPadResposta, String mensagemErro);
+    void onRespostaTransacaoRegistradaServeloja(boolean status, PedidoPinPadResposta pinPadResposta, String mensagemErro);
 
 }
