@@ -11,7 +11,7 @@ public class PrefsHelper {
 
     private Context context;
     private SharedPreferences sharedPreferences;
-    private final String PREFS = "prefs";
+    private final String PREFS = "prefs_serveloja_pagamento";
     private final String PINPAD_MODELO = "pinpad_modelo";
     private final String PINPAD_MAC = "pinpad_mac";
     private final String CHAVE_ACESSO = "chave_acesso";

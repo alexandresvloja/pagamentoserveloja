@@ -26,5 +26,10 @@ public class TransacaoEnum {
         public static final int CREDITO = 1;
     }
 
+    public static class StatusRetorno {
+        public static final int CARTAO_EXIGE_INFORMAR_CVV = 1;
+        public static final int CARTAO_EXIGE_INFORMAR_SENHA = 2;
+    }
+
 
 }

@@ -26,13 +26,15 @@ import java.util.Set;
 import br.com.servelojapagamento.adapter_recycler_view.AdapterRvListaDispositivos;
 import br.com.servelojapagamento.interfaces.ClickRecyclerViewListener;
 import br.com.servelojapagamento.interfaces.RespostaConexaoBlueetothPinpadListener;
+import br.com.servelojapagamento.interfaces.RespostaTransacaoClienteListener;
 import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
+import br.com.servelojapagamento.modelo.TransacaoServeloja;
 import br.com.servelojapagamento.modelo.UserMobile;
 import br.com.servelojapagamento.preferences.PrefsHelper;
 import br.com.servelojapagamento.utils.BluetoothUtils;
 import br.com.servelojapagamento.utils.StoneUtils;
 import br.com.servelojapagamento.utils.TransacaoEnum;
-import br.com.servelojapagamento.utils.TransacaoUtils;
+import br.com.servelojapagamento.utils.TransacaoGeralUtils;
 import br.com.servelojapagamento.utils.Utils;
 import br.com.servelojapagamento.webservice.ServelojaWebService;
 import stone.application.enums.ErrorsEnum;
@@ -40,7 +42,7 @@ import stone.utils.Stone;
 
 public class MainActivity extends AppCompatActivity implements
         StatusBluetoothListener, ClickRecyclerViewListener,
-        RespostaConexaoBlueetothPinpadListener {
+        RespostaConexaoBlueetothPinpadListener, RespostaTransacaoClienteListener {
 
     private String TAG;
     private BluetoothUtils bluetoothUtils;
@@ -51,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements
     private ArrayList<BluetoothDevice> arrayListaDispositivo;
     private Button btAbrirDialogProcurarDispositivos;
     private StoneUtils stoneUtils;
-    private TransacaoUtils transacaoUtils;
+    private TransacaoGeralUtils transacaoGeralUtils;
     private ServelojaWebService servelojaWebService;
     private PrefsHelper prefsHelper;
 
@@ -62,7 +64,7 @@ public class MainActivity extends AppCompatActivity implements
         TAG = getClass().getSimpleName();
         bluetoothUtils = new BluetoothUtils(this);
         stoneUtils = new StoneUtils(this);
-        transacaoUtils = new TransacaoUtils(this);
+        transacaoGeralUtils = new TransacaoGeralUtils(this);
         servelojaWebService = new ServelojaWebService(this);
         prefsHelper = new PrefsHelper(this);
 
@@ -71,17 +73,14 @@ public class MainActivity extends AppCompatActivity implements
         bluetoothUtils.setStatusBluetoothListener(this);
         bluetoothUtils.iniciarServicoBluetooth();
 
-        // iniciando comunicação Stone
-        stoneUtils.iniciarStone(true);
-
         // setup views
         setupDialogParearDispositivos();
         btAbrirDialogProcurarDispositivos = (Button) findViewById(R.id.ac_main_bt_abrir_dialog);
 
-
         btAbrirDialogProcurarDispositivos.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                stoneUtils.iniciarStone(true);
                 if (bluetoothUtils.checkBluetoothAtivado()) {
                     addDispositivosJaPareados();
                     bluetoothUtils.iniciarProcuraDispositivos();
@@ -93,7 +92,8 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
-         obterChaveAcesso();
+        stoneUtils.checkPermissoes();
+//        obterChaveAcesso();
 
     }
 
@@ -106,6 +106,10 @@ public class MainActivity extends AppCompatActivity implements
         UserMobile user = new UserMobile("0505424",
                 Utils.encriptar("123456"),
                 usuario, "");
+
+//        UserMobile user = new UserMobile("0800",
+//                encriptar("010101"),
+//                usuario, "");
 
         user.setAppDetails(new UserMobile.App(codChip,
                 "Android", versaoSdk, versaoApp));
@@ -220,11 +224,7 @@ public class MainActivity extends AppCompatActivity implements
     public void onEstadoAlteradoBluetooth(int estadoAtual, int estadoAnterior) {
         Log.d(TAG, "onEstadoAlteradoBluetooth: estadoAtual " + estadoAtual);
         Log.d(TAG, "onEstadoAlteradoBluetooth: estadoAnterior " + estadoAnterior);
-        if (estadoAtual == BluetoothDevice.BOND_BONDED && estadoAnterior == BluetoothDevice.BOND_BONDING) {
-            Log.d(TAG, "onEstadoAlteradoBluetooth: Removendo Pinpad");
-            prefsHelper.salvarPinpadModelo("");
-            prefsHelper.salvarPinpadMac("");
-        }
+
     }
 
     @Override
@@ -247,18 +247,37 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onRespostaConexaoBlueetothPinpad(boolean status, List<ErrorsEnum> listaErros) {
-        // conexão via Bluetooth efetuada com sucesso
+        // conexao via Bluetooth efetuada com sucesso
         if (status) {
-            Toast.makeText(this, "Conexão efetuada com sucesso!", Toast.LENGTH_SHORT).show();
-            // confirmação de conexão com a Pinpad
+            Toast.makeText(this, "Conexao efetuada com sucesso!", Toast.LENGTH_SHORT).show();
+            // confirmaÃ§Ã£o de conexÃ£o com a Pinpad
             if (Stone.isConnectedToPinpad()) {
                 Log.d(TAG, "onRespostaConexaoBlueetothPinpad: isConnectedToPinpad");
-//                 passando como parâmetro o callback onRespostaTransacao
-                transacaoUtils.iniciarTransacao("20", TransacaoEnum.TipoTransacao.CREDITO,
-                        TransacaoEnum.QntParcelas.A_VISTA, false);
+                TransacaoServeloja transacaoServeloja = new TransacaoServeloja();
+                transacaoServeloja.setTipoTransacao(TransacaoEnum.TipoTransacao.CREDITO);
+                transacaoServeloja.setValor("25");
+                transacaoServeloja.setDddTelefone("79");
+                transacaoServeloja.setNumTelefone("996485108");
+                transacaoServeloja.setValorSemTaxas("20");
+                transacaoServeloja.setNumParcelas(TransacaoEnum.QntParcelas.A_VISTA);
+                transacaoServeloja.setUsoTarja(false);
+                transacaoGeralUtils.iniciarTransacao(transacaoServeloja, this);
             }
         } else {
             //
+        }
+    }
+
+    @Override
+    public void onRespostaTransacaoCliente(int status) {
+        switch (status) {
+            case TransacaoEnum.StatusRetorno.CARTAO_EXIGE_INFORMAR_CVV:
+                transacaoGeralUtils.informarCvv("738");
+                break;
+            case TransacaoEnum.StatusRetorno.CARTAO_EXIGE_INFORMAR_SENHA:
+                break;
+            default:
+                break;
         }
     }
 
