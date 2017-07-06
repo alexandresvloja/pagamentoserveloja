@@ -336,7 +336,7 @@ public class MainActivity extends AppCompatActivity implements
         if (dispositivo.getAddress().matches("^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$")) {
             if (dispositivo.getName().contains("PAX")) {
                 // passando como parâmetro o callback onRespostaConexaoBlueetothPinpad
-                stoneUtils.iniciarComunicacaoPinpad(dispositivo, this);
+                servelojaBluetooth.iniciarComunicacaoPinpad(dispositivo, this);
             }
         }
         servelojaBluetooth.pararProcuraDispositivo();
@@ -347,7 +347,7 @@ public class MainActivity extends AppCompatActivity implements
     public void onRespostaConexaoBlueetothPinpad(boolean status, List<ErrorsEnum> listaErros) {
         // conexao via Bluetooth efetuada com sucesso
         if (status) {
-            if (stoneUtils.checkPinpadConectado())
+            if (servelojaBluetooth.checkPinpadConectado())
                 Toast.makeText(this, "Conexao efetuada com sucesso!", Toast.LENGTH_SHORT).show();
         } else {
             //

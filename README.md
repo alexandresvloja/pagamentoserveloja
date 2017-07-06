@@ -1,4 +1,26 @@
 # pagamentoserveloja
+
+## Adicionando a biblioteca ao seu projeto
+Em Project.gradle, deve está assim:
+ ```gradle
+allprojects {
+    repositories {
+        ...
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+
+Em App.gradle, deve está assim:
+
+```gradle
+dependencies {
+    ...
+    compile 'com.github.alexandresvloja:pagamentoserveloja:1.0.0'
+}
+```
+# Utilizando a biblioteca
+
 ## ServelojaBluetooth
 Gerencia todas operações em relação a comunicação Bluetooth com a Pidpad
 
@@ -42,15 +64,32 @@ public boolean pararProcuraDispositivo()
 public void solicitarAtivacaoBluetooth()
 ```
 
+* Constante utilizada para requisição de ativação do Bluetooth. Através dela a aplicação pode interceptar e tratar a resposta da requisição.
+```java
+public static final int SOLICITACAO_HABILITAR_BLUETOOTH = 1000;
+
+@Override
+protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+    Log.d(TAG, "onActivityResult: requestCode " + requestCode);
+    if (requestCode == ServelojaBluetooth.SOLICITACAO_HABILITAR_BLUETOOTH) {
+        ...
+    }
+}
+```
+
 * Obtém uma lista de dispositivos já pareados.
 ```java
 public Set<BluetoothDevice> getDispositivosPareados()
 ```
 
+
+
+
 ## Implementação ServelojaBluetooth
 
 ```java
-public class MainActivity extends AppCompatActivity implements StatusBluetoothListener {
+public class BluetoothActivity extends AppCompatActivity implements StatusBluetoothListener {
     
     private ServelojaBluetooth servelojaBluetooth;
     private Button btAbrirDialogProcurarDispositivos;
@@ -58,42 +97,54 @@ public class MainActivity extends AppCompatActivity implements StatusBluetoothLi
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-    servelojaBluetooth = new ServelojaBluetooth(this);
+        servelojaBluetooth = new ServelojaBluetooth(this);
+        servelojaBluetooth.setStatusBluetoothListener(this);
 
-    // a prória Activity, implementa o ouvinte, e assim, passando this como parâmetro de ouvinte
-    servelojaBluetooth.setStatusBluetoothListener(this);
+        btAbrirDialogProcurarDispositivos = (Button) findViewById(R.id.ac_main_bt_abrir_dialog);
 
-    btAbrirDialogProcurarDispositivos = (Button) findViewById(R.id.ac_main_bt_abrir_dialog);
-
-    btAbrirDialogProcurarDispositivos.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            // verifica se o Bluetooth está ativo
-            if (servelojaBluetooth.checkBluetoothAtivado()) {
-                // inicia a busca por dispositivos
-                servelojaBluetooth.iniciarProcuraDispositivos();
-            } else {
-                // caso não esteja, solicita o usuário que o ative
-                servelojaBluetooth.solicitarAtivacaoBluetooth();
+        btAbrirDialogProcurarDispositivos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // verifica se o Bluetooth está ativo
+                if (servelojaBluetooth.checkBluetoothAtivado()) {
+                    // inicia a busca por dispositivos
+                    servelojaBluetooth.iniciarProcuraDispositivos();
+                } else {
+                    // caso o bluetooth não esteja ativo, solicita o usuário que o ative
+                    servelojaBluetooth.solicitarAtivacaoBluetooth();
+                }
             }
-        }
-    });
+        });
 
     }
 
     @Override
-    public void onDispositivoEncontradoBluetooth(BluetoothDevice dispositivo) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG, "onActivityResult: requestCode " + requestCode);
+        // resultCode = -1, indica que o usuário aceitou habilitar o Bluetooth
+        if (requestCode == ServelojaBluetooth.SOLICITACAO_HABILITAR_BLUETOOTH && resultCode == -1) {
+            Log.d(TAG, "onActivityResult: resultCode " + resultCode);
+            ...
+        }
+    }
 
+    @Override
+    public void onDispositivoEncontradoBluetooth(BluetoothDevice bluetoothDevice) {
+        Log.d(TAG, "onDispositivoEncontradoBluetooth: " + bluetoothDevice.getName());
+        ...
     }
 
     @Override
     public void onEstadoAlteradoBluetooth(int estadoAtual, int estadoAnterior) {
-
+        Log.d(TAG, "onEstadoAlteradoBluetooth: estadoAtual " + estadoAtual + " ,estadoAnterior " + estadoAnterior);
+        ...
     }
 
     @Override
     public void onProcuraDispositivoFinalizadaBluetooth() {
-
+        Log.d(TAG, "onProcuraDispositivoFinalizadaBluetooth: ");
+        ...
     }
 
 }
@@ -105,19 +156,43 @@ Outra forma de implementar o ouvinte StatusBluetoothListener
 servelojaBluetooth.setStatusBluetoothListener(new StatusBluetoothListener() {
     
     @Override
-    public void onDispositivoEncontradoBluetooth(BluetoothDevice dispositivo) {
-
+    public void onDispositivoEncontradoBluetooth(BluetoothDevice bluetoothDevice) {
+        Log.d(TAG, "onDispositivoEncontradoBluetooth: " + bluetoothDevice.getName());
+        ...
     }
 
     @Override
     public void onEstadoAlteradoBluetooth(int estadoAtual, int estadoAnterior) {
-
+        Log.d(TAG, "onEstadoAlteradoBluetooth: estadoAtual " + estadoAtual + " ,estadoAnterior " + estadoAnterior);
+        ...
     }
 
     @Override
     public void onProcuraDispositivoFinalizadaBluetooth() {
-
+        Log.d(TAG, "onProcuraDispositivoFinalizadaBluetooth: ");
+        ...
     }
     
 });
 ```
+
+## Pareando com a Pinpad
+Após procurar os dispositivos é necessário selecionar algum BluetoothDevice para iniciar a comunicação com a Pinpad.
+
+É necessário passar como parâmetro o dispositivo que deseja se comunicar, e o ouvinte para obter a resposta da comunicação, e assim, identificar se a comunicação foi efetuada com sucesso.
+
+```java
+public void iniciarComunicacaoPinpad(final BluetoothDevice dispositivo, final RespostaConexaoBlueetothPinpadListener respostaConexaoBlueetothPinpadListener);
+
+@Override
+public void onRespostaConexaoBlueetothPinpad(boolean status, List<ErrorsEnum> listaErros) {
+    // TRUE, caso a comunicação tenha sido estabelecida
+    if (status) {
+        // confirmação da comunicação Bluetooth
+        if (servelojaBluetooth.checkPinpadConectado())
+            Toast.makeText(this, "Conexao efetuada com sucesso!", Toast.LENGTH_SHORT).show();
+    } else {
+        ...
+    }
+}
+``` 

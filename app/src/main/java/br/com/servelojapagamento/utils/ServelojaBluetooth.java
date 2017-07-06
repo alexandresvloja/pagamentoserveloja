@@ -8,10 +8,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
+import android.widget.Toast;
 
+import java.lang.reflect.Method;
 import java.util.Set;
 
+import br.com.servelojapagamento.interfaces.RespostaConexaoBlueetothPinpadListener;
 import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
+import br.com.servelojapagamento.preferences.PrefsHelper;
+import stone.application.interfaces.StoneCallbackInterface;
+import stone.providers.BluetoothConnectionProvider;
+import stone.utils.PinpadObject;
+import stone.utils.Stone;
 
 
 /**
@@ -26,11 +34,13 @@ public class ServelojaBluetooth {
     private BluetoothAdapter bluetoothAdapter;
     private StatusBluetoothListener statusBluetoothListener;
     private boolean servicoIniciado;
+    private PrefsHelper prefsHelper;
 
     public ServelojaBluetooth(Activity activity) {
         this.TAG = getClass().getSimpleName();
         this.activity = activity;
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        this.prefsHelper = new PrefsHelper(activity);
     }
 
     public void setStatusBluetoothListener(StatusBluetoothListener statusBluetoothListener) {
@@ -79,6 +89,56 @@ public class ServelojaBluetooth {
     public Set<BluetoothDevice> getDispositivosPareados() {
         Set<BluetoothDevice> dispositivosPareados = bluetoothAdapter.getBondedDevices();
         return dispositivosPareados;
+    }
+
+    public void iniciarComunicacaoPinpad(final BluetoothDevice dispositivo, final RespostaConexaoBlueetothPinpadListener
+            respostaConexaoBlueetothPinpadListener) {
+        try {
+            Log.d(TAG, "iniciarComunicacaoPinpad: ");
+            if (checkPinpadConectado()) {
+                Toast.makeText(activity, "Pinpad já conectada.", Toast.LENGTH_SHORT).show();
+            } else {
+                PinpadObject pinpadObject = new PinpadObject(dispositivo.getName(), dispositivo.getAddress(), false);
+                final BluetoothConnectionProvider bluetoothConnectionProvider =
+                        new BluetoothConnectionProvider(activity, pinpadObject);
+                bluetoothConnectionProvider.setDialogMessage("Criando conexao com o pinpad selecionado"); // Mensagem exibida do dialog.
+                bluetoothConnectionProvider.setWorkInBackground(false); // Informa que haverá um feedback para o usuário.
+                bluetoothConnectionProvider.setConnectionCallback(new StoneCallbackInterface() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "onSuccess: ");
+                        respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(true,
+                                bluetoothConnectionProvider.getListOfErrors());
+                        prefsHelper.salvarPinpadMac(dispositivo.getAddress());
+                        prefsHelper.salvarPinpadModelo(dispositivo.getName());
+                        parearDispositivo(dispositivo);
+                    }
+
+                    @Override
+                    public void onError() {
+                        Log.d(TAG, "onError: ");
+                        respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(true,
+                                bluetoothConnectionProvider.getListOfErrors());
+                    }
+                });
+                bluetoothConnectionProvider.execute();
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "iniciarComunicacaoPinpad: Exception " + e.getMessage());
+        }
+    }
+
+    public boolean checkPinpadConectado() {
+        return Stone.isConnectedToPinpad();
+    }
+
+    private void parearDispositivo(BluetoothDevice dispositivo) {
+        try {
+            Method method = dispositivo.getClass().getMethod("createBond", (Class[]) null);
+            method.invoke(dispositivo, (Object[]) null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {

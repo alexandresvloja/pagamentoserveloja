@@ -59,12 +59,11 @@ public class StoneUtils {
     private String TAG;
     private RespostaConexaoBlueetothPinpadListener respostaConexaoBlueetothPinpadListener;
     private boolean modoDesenvolvedor;
-    private PrefsHelper prefsHelper;
+
 
     public StoneUtils(Activity activity) {
         this.TAG = getClass().getSimpleName();
         this.activity = activity;
-        this.prefsHelper = new PrefsHelper(activity);
     }
 
     public void iniciarStone(boolean modoDesenvolvedor) {
@@ -123,53 +122,6 @@ public class StoneUtils {
                     }
                 })
                 .check();
-    }
-
-    public void iniciarComunicacaoPinpad(final BluetoothDevice dispositivo, final RespostaConexaoBlueetothPinpadListener
-            respostaConexaoBlueetothPinpadListener) {
-        try {
-            Log.d(TAG, "iniciarComunicacaoPinpad: ");
-            this.respostaConexaoBlueetothPinpadListener = respostaConexaoBlueetothPinpadListener;
-            if (checkPinpadConectado()) {
-                Toast.makeText(activity, "Pinpad já conectada.", Toast.LENGTH_SHORT).show();
-            } else {
-                PinpadObject pinpadObject = new PinpadObject(dispositivo.getName(), dispositivo.getAddress(), false);
-                final BluetoothConnectionProvider bluetoothConnectionProvider =
-                        new BluetoothConnectionProvider(activity, pinpadObject);
-                bluetoothConnectionProvider.setDialogMessage("Criando conexao com o pinpad selecionado"); // Mensagem exibida do dialog.
-                bluetoothConnectionProvider.setWorkInBackground(false); // Informa que haverá um feedback para o usuário.
-                bluetoothConnectionProvider.setConnectionCallback(new StoneCallbackInterface() {
-                    @Override
-                    public void onSuccess() {
-                        Log.d(TAG, "onSuccess: ");
-                        respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(true,
-                                bluetoothConnectionProvider.getListOfErrors());
-                        prefsHelper.salvarPinpadMac(dispositivo.getAddress());
-                        prefsHelper.salvarPinpadModelo(dispositivo.getName());
-                        parearDispositivo(dispositivo);
-                    }
-
-                    @Override
-                    public void onError() {
-                        Log.d(TAG, "onError: ");
-                        respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(true,
-                                bluetoothConnectionProvider.getListOfErrors());
-                    }
-                });
-                bluetoothConnectionProvider.execute();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "iniciarComunicacaoPinpad: Exception " + e.getMessage());
-        }
-    }
-
-    private void parearDispositivo(BluetoothDevice dispositivo) {
-        try {
-            Method method = dispositivo.getClass().getMethod("createBond", (Class[]) null);
-            method.invoke(dispositivo, (Object[]) null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     /**
