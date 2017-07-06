@@ -1,28 +1,28 @@
 # pagamentoserveloja
 ## ServelojaBluetooth
-Gerencia todas opera√ß√µes em rela√ß√£o a comunica√ß√£o Bluetooth com a Pidpad
+Gerencia todas operaÁıes em relaÁ„o a comunicaÁ„o Bluetooth com a Pidpad
 
 * Construtor
 ```java
 public ServelojaBluetooth(Activity activity)
 ```
 
-* Define o ouvinte dos Status do Bluetooth. Atrav√©s deste ouvinte, √© poss√≠vel obter os dispositivos encontrados, os estados (ativado ou desativado) e a finaliza√ß√£o de procura de dispositivos.
+* Define o ouvinte dos Status do Bluetooth. AtravÈs deste ouvinte, È possÌvel obter os dispositivos encontrados, os estados (ativado ou desativado) e a finalizaÁ„o de procura de dispositivos.
 ```java
 public void setStatusBluetoothListener(StatusBluetoothListener statusBluetoothListener)
 ```
 
-* Ap√≥s chamar esse m√©todo, um servi√ßo ser√° inicializado, e assim, detectar√° todas altera√ß√µes referente aos Status do Bluetooth, onde essas altera√ß√µes ser√£o passadas para o ouvinte definido no m√©todo setStatusBluetoothListener()
+* ApÛs chamar esse mÈtodo, um serviÁo ser· inicializado, e assim, detectar· todas alteraÁıes referente aos Status do Bluetooth, onde essas alteraÁıes ser„o passadas para o ouvinte definido no mÈtodo setStatusBluetoothListener()
 ```java
 public void iniciarServicoBluetooth()
 ```
 
-* P√°ra o servi√ßo do Bluetooth
+* P·ra o serviÁo do Bluetooth
 ```java
 public void pararServicoBluetooth()
 ```
 
-* Verifica se o Bluetooth do aparelho, est√° ativo.
+* Verifica se o Bluetooth do aparelho, est· ativo.
 ```java
 public boolean checkBluetoothAtivado()
 ```
@@ -32,33 +32,35 @@ public boolean checkBluetoothAtivado()
 public boolean iniciarProcuraDispositivos()
 ```
 
-* P√°ra a procura por dispositivos.
+* P·ra a procura por dispositivos.
 ```java
 public boolean pararProcuraDispositivo()
 ```
 
-* Envia uma solicita√ß√£o para o usu√°rio ativar o Bluetooth do aparelho.
+* Envia uma solicitaÁ„o para o usu·rio ativar o Bluetooth do aparelho.
 ```java
 public void solicitarAtivacaoBluetooth()
 ```
 
-* Obt√©m uma lista de dispositivos j√° pareados.
+* ObtÈm uma lista de dispositivos j· pareados.
 ```java
 public Set<BluetoothDevice> getDispositivosPareados()
 ```
 
-## Implementa√ß√£o ServelojaBluetooth
+## ImplementaÁ„o ServelojaBluetooth
 
 ```java
-private ServelojaBluetooth servelojaBluetooth;
-private Button btAbrirDialogProcurarDispositivos;
-
-@Override
-protected void onCreate(Bundle savedInstanceState) {
+public class MainActivity extends AppCompatActivity implements StatusBluetoothListener {
     
+    private ServelojaBluetooth servelojaBluetooth;
+    private Button btAbrirDialogProcurarDispositivos;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+
     servelojaBluetooth = new ServelojaBluetooth(this);
 
-    // a pr√≥ria Activity, implementa o ouvinte, e assim, passando this como par√¢metro de ouvinte
+    // a prÛria Activity, implementa o ouvinte, e assim, passando this como par‚metro de ouvinte
     servelojaBluetooth.setStatusBluetoothListener(this);
 
     btAbrirDialogProcurarDispositivos = (Button) findViewById(R.id.ac_main_bt_abrir_dialog);
@@ -66,39 +68,19 @@ protected void onCreate(Bundle savedInstanceState) {
     btAbrirDialogProcurarDispositivos.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            // verifica se o Bluetooth est√° ativo
+            // verifica se o Bluetooth est· ativo
             if (servelojaBluetooth.checkBluetoothAtivado()) {
                 // inicia a busca por dispositivos
                 servelojaBluetooth.iniciarProcuraDispositivos();
             } else {
-                // caso n√£o esteja, solicita o usu√°rio que o ative
+                // caso n„o esteja, solicita o usu·rio que o ative
                 servelojaBluetooth.solicitarAtivacaoBluetooth();
             }
         }
     });
-    
-}
 
-@Override
-public void onDispositivoEncontradoBluetooth(BluetoothDevice dispositivo) {
-    
-}
+    }
 
-@Override
-public void onEstadoAlteradoBluetooth(int estadoAtual, int estadoAnterior) {
-
-}
-
-@Override
-public void onProcuraDispositivoFinalizadaBluetooth() {
-
-}
-```
-
-Outra forma de implementar o ouvinte StatusBluetoothListener
-
-```java
-servelojaBluetooth.setStatusBluetoothListener(new StatusBluetoothListener() {
     @Override
     public void onDispositivoEncontradoBluetooth(BluetoothDevice dispositivo) {
 
@@ -113,5 +95,29 @@ servelojaBluetooth.setStatusBluetoothListener(new StatusBluetoothListener() {
     public void onProcuraDispositivoFinalizadaBluetooth() {
 
     }
+
+}
+```
+
+Outra forma de implementar o ouvinte StatusBluetoothListener
+
+```java
+servelojaBluetooth.setStatusBluetoothListener(new StatusBluetoothListener() {
+    
+    @Override
+    public void onDispositivoEncontradoBluetooth(BluetoothDevice dispositivo) {
+
+    }
+
+    @Override
+    public void onEstadoAlteradoBluetooth(int estadoAtual, int estadoAnterior) {
+
+    }
+
+    @Override
+    public void onProcuraDispositivoFinalizadaBluetooth() {
+
+    }
+    
 });
 ```
