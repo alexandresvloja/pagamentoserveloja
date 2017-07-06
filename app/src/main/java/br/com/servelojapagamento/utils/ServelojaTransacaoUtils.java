@@ -1,33 +1,25 @@
 package br.com.servelojapagamento.utils;
 
 import android.app.Activity;
-import android.os.AsyncTask;
 import android.util.Log;
 
-import org.json.JSONObject;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
 
+import br.com.servelojapagamento.interfaces.RespostaTransacaoAplicativoListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoClienteListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoRegistradaServelojaListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoStoneListener;
-import br.com.servelojapagamento.modelo.Bandeira;
-import br.com.servelojapagamento.modelo.ConteudoBandeira;
-import br.com.servelojapagamento.modelo.ParamsRegistrarTransacao;
-import br.com.servelojapagamento.modelo.PedidoPinPadResposta;
-import br.com.servelojapagamento.modelo.TransacaoServeloja;
 import br.com.servelojapagamento.preferences.PrefsHelper;
-import br.com.servelojapagamento.webservice.ServelojaWebService;
+import br.com.servelojapagamento.webservice_mundipagg.MundipaggWebService;
+import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTokenCartao;
+import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTokenEndereco;
+import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTransacaoSemToken;
+import br.com.servelojapagamento.webservice_serveloja.Bandeira;
+import br.com.servelojapagamento.webservice_serveloja.ConteudoBandeira;
+import br.com.servelojapagamento.webservice_serveloja.ParamsRegistrarTransacao;
+import br.com.servelojapagamento.webservice_serveloja.PedidoPinPadResposta;
+import br.com.servelojapagamento.webservice_serveloja.ServelojaWebService;
+import br.com.servelojapagamento.webservice_serveloja.TransacaoServeloja;
 import stone.application.enums.TransactionStatusEnum;
 import stone.database.transaction.TransactionDAO;
 import stone.database.transaction.TransactionObject;
@@ -38,7 +30,7 @@ import stone.providers.TransactionProvider;
  * Created by alexandre on 04/07/2017.
  */
 
-public class TransacaoGeralUtils
+public class ServelojaTransacaoUtils
         implements RespostaTransacaoStoneListener,
         RespostaTransacaoRegistradaServelojaListener {
 
@@ -46,6 +38,7 @@ public class TransacaoGeralUtils
     private String TAG;
     private StoneUtils stoneUtils;
     private ServelojaWebService servelojaWebService;
+    private MundipaggWebService mundipaggWebService;
     private ParamsRegistrarTransacao paramsRegistrarTransacao;
     private PrefsHelper prefsHelper;
     private ConteudoBandeira conteudoBandeira;
@@ -54,17 +47,19 @@ public class TransacaoGeralUtils
     private RespostaTransacaoClienteListener respostaTransacaoClienteListener;
 
 
-    public TransacaoGeralUtils(Activity activity) {
+    public ServelojaTransacaoUtils(Activity activity) {
         this.activity = activity;
         this.TAG = getClass().getSimpleName();
         this.stoneUtils = new StoneUtils(activity);
         this.paramsRegistrarTransacao = new ParamsRegistrarTransacao();
         this.prefsHelper = new PrefsHelper(activity);
-        this.servelojaWebService = new ServelojaWebService(activity);
+        this.servelojaWebService = new ServelojaWebService(activity, this);
+        this.mundipaggWebService = new MundipaggWebService();
         iniciarListaConteudoBandeira();
     }
 
-    public void iniciarTransacao(TransacaoServeloja transacaoServeloja, RespostaTransacaoClienteListener respostaTransacaoClienteListener) {
+    public void iniciarTransacao(TransacaoServeloja transacaoServeloja,
+                                 RespostaTransacaoClienteListener respostaTransacaoClienteListener) {
         Log.d(TAG, "iniciarTransacao: ");
         this.respostaTransacaoClienteListener = respostaTransacaoClienteListener;
         paramsRegistrarTransacao.setValor(transacaoServeloja.getValor());
@@ -82,8 +77,8 @@ public class TransacaoGeralUtils
         paramsRegistrarTransacao.setNumTelefone(transacaoServeloja.getNumTelefone());
         paramsRegistrarTransacao.setUsoTarja(transacaoServeloja.isUsoTarja());
         paramsRegistrarTransacao.setDataTransacao(Utils.getDataAtualStr());
-        paramsRegistrarTransacao.setCpfCNPJ("");
-        paramsRegistrarTransacao.setCpfCnpjAdesao("");
+        paramsRegistrarTransacao.setCpfCNPJ(transacaoServeloja.getCpfCnpjComprador());
+        paramsRegistrarTransacao.setCpfCnpjAdesao("06130856555");
         // chamando procedimento de transação da Stone, e sua resposta será trazida
         // no Callback onRespostaTransacaoStone
         stoneUtils.iniciarTransacao(paramsRegistrarTransacao.getValor(),
@@ -113,10 +108,35 @@ public class TransacaoGeralUtils
         Log.d(TAG, "setupParametrosParaRegistrarTransacao: " + paramsRegistrarTransacao.toString());
     }
 
-    private void criptografarTransacao() {
+    private void criptografarTransacaoStone() {
         Log.d(TAG, "setupParametrosParaRegistrarTransacao: ");
         paramsRegistrarTransacao.setBandeiraCartao(Utils.encriptar(paramsRegistrarTransacao.getBandeiraCartao()));
         paramsRegistrarTransacao.setNumCartao(Utils.encriptar(paramsRegistrarTransacao.getNumCartao()));
+    }
+
+    public void criarTransacaoSemToken(ParamsCriarTransacaoSemToken transacao,
+                                       RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.criarTransacaoSemToken(transacao, respostaTransacaoAplicativoListener);
+    }
+
+    public void obterToken(ParamsCriarTokenCartao cartao, ParamsCriarTokenEndereco endereco,
+                           RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.criarToken(cartao, endereco, respostaTransacaoAplicativoListener);
+    }
+
+    public void consultarToken(String token,
+                               RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.consultarToken(token, respostaTransacaoAplicativoListener);
+    }
+
+    public void consultarTransacaoPorReferenciaPedido(String referencia,
+                                                      RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.consultarTransacaoPorReferenciaPedido(referencia, respostaTransacaoAplicativoListener);
+    }
+
+    public void consultarTransacaoPorChavePedido(String chave,
+                                                 RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.consultarTransacaoPorChavePedido(chave, respostaTransacaoAplicativoListener);
     }
 
     private String getStatusTransacao(TransactionStatusEnum transactionStatusEnum) {
@@ -150,18 +170,30 @@ public class TransacaoGeralUtils
     public void onRespostaTransacaoStone(boolean status, TransactionProvider transactionProvider) {
         Log.d(TAG, "onRespostaTransacaoStone: status " + status);
         Log.d(TAG, "onRespostaTransacaoStone: listaErros " + transactionProvider.getListOfErrors().toString());
+
+        TransactionDAO transactionDAO = new TransactionDAO(activity);
+        TransactionObject transactionObject = transactionDAO.findTransactionWithId(
+                transactionDAO.getLastTransactionId());
+
+        String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
+        ;
+        String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
+
+        if (!(cartaoBandeira.toLowerCase().equals("mastercard") || cartaoBandeira.toLowerCase().equals("visa"))) {
+            // falha "Passar um cartão da bandeira " + bandeira + usando o chip não é suportado.\n Por favor " +
+            // repita a operação usando a tarja magnética"
+        }
+
         if (status) {
             if (transactionProvider.getListOfErrors().size() > 0) {
                 Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone - lista de erro > 0");
+                // Usuario Passou cartão chipado que não é master ou visa
             } else {
                 Log.d(TAG, "onRespostaTransacaoStone: transação efetuada com sucesso");
                 // após verificação de não ocorrência de erros, procede para preparação dos parâmetros
                 // e seguir para etapa de inserção na base de dados Serveloja
-                TransactionDAO transactionDAO = new TransactionDAO(activity);
-                TransactionObject transactionObject = transactionDAO.findTransactionWithId(
-                        transactionDAO.getLastTransactionId());
                 setupParametrosParaRegistrarTransacao(transactionObject);
-                criptografarTransacao();
+                criptografarTransacaoStone();
                 servelojaWebService.registrarTransacao(paramsRegistrarTransacao, this);
             }
         } else {
@@ -174,7 +206,9 @@ public class TransacaoGeralUtils
             } else {
                 // transação de débito via tarja, não é permitida
                 if (paramsRegistrarTransacao.getTipoTransacao() == TransacaoEnum.TipoTransacao.DEBITO) {
-
+                    // enviar erro
+                    respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                            TransacaoEnum.StatusSeveloja.TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO);
                 } else {
                     // indicando que o erro foi referente a tarja
                     Log.d(TAG, "onRespostaTransacaoStone: seguindo o fluxo para transação com tarja");
@@ -185,21 +219,18 @@ public class TransacaoGeralUtils
                         field.setAccessible(true);
                         // obtem os dados referente ao cartão
                         dadosCartao = field.get(transactionProvider);
-                        String cartaoBin = dadosCartao.toString().split(",")[8].split("=")[1].substring(1, 7);
-                        String bandeira = Utils.obterBandeiraPorBin(cartaoBin);
+                        cartaoBin = dadosCartao.toString().split(",")[8].split("=")[1].substring(1, 7);
+                        cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
                         // verifica se a bandeira do cartão, não é permitida pela STONE, pois assim, este cartão, deverá
                         // ser lido com o CHIP. (Caso seja permitido pela Stone, indica que o mesmo possui CHIP)
                         // e verifica se a operação não é de débito
-                        if (!stoneUtils.checkBandeiraPermitidaPelaStone(bandeira)) {
+                        if (!stoneUtils.checkBandeiraPermitidaPelaStone(cartaoBandeira)) {
                             Log.d(TAG, "onRespostaTransacaoStone: cartão permitido");
-                            TransactionDAO transactionDAO = new TransactionDAO(activity);
-                            TransactionObject transactionObject = transactionDAO.findTransactionWithId(
-                                    transactionDAO.getLastTransactionId());
                             setupParametrosParaRegistrarTransacao(transactionObject);
                             String[] tracktrace = dadosCartao.toString().split(",")[8].split("=");
                             String dataValidadeCartao = tratarData(tracktrace[2].substring(0, 4));
                             // atualização dos atributos referente ao cartão
-                            paramsRegistrarTransacao.setBandeiraCartao(bandeira);
+                            paramsRegistrarTransacao.setBandeiraCartao(cartaoBandeira);
                             paramsRegistrarTransacao.setNumCartao(tracktrace[1].substring(1));
                             paramsRegistrarTransacao.setDataValidadeCartao(dataValidadeCartao);
                             paramsRegistrarTransacao.setNumBinCartao(cartaoBin);
@@ -234,13 +265,13 @@ public class TransacaoGeralUtils
                 cartaoExigeCvv = true;
                 // notifica que é necessário o CVV
                 respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                        TransacaoEnum.StatusRetorno.CARTAO_EXIGE_INFORMAR_CVV);
+                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_CVV);
             } else if (checkExigeSenha(paramsRegistrarTransacao.getBandeiraCartao().toLowerCase())) {
                 Log.d(TAG, "iniciarTransacaoServeloja: checkExigeSenha true");
                 cartaoExigeSenha = true;
                 // notifica que é necessário a SENHA
                 respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                        TransacaoEnum.StatusRetorno.CARTAO_EXIGE_INFORMAR_SENHA);
+                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA);
             } else {
                 iniciarTransacaoSegura();
             }
@@ -263,7 +294,7 @@ public class TransacaoGeralUtils
                 cartaoExigeSenha = true;
                 // notifica o usuário para informar a senha
                 respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                        TransacaoEnum.StatusRetorno.CARTAO_EXIGE_INFORMAR_SENHA);
+                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA);
             } else {
                 iniciarTransacaoSegura();
             }
@@ -319,6 +350,12 @@ public class TransacaoGeralUtils
                     pedidoPinPadResposta.toString());
         }
 
+    }
+
+    @Override
+    public void onRespostaTransacaoStatusServeloja(int status) {
+        Log.d(TAG, "onRespostaTransacaoStatusServeloja: status " + status);
+        respostaTransacaoClienteListener.onRespostaTransacaoCliente(status);
     }
 
     private boolean checkExigeCVV(String bandeira) {
@@ -395,109 +432,6 @@ public class TransacaoGeralUtils
                         "True")
         };
         conteudoBandeira = new ConteudoBandeira(1, bandeiras);
-    }
-
-    private class ComunicacaoWebService extends AsyncTask<String, Void, String> {
-
-        int codRetorno = 0;
-        int codRetornoErro = 0;
-        String numeroAutorizacao = "";
-        String mensagemRetorno = "";
-        String msgErro = "";
-        ArrayList<String> conteudosComprovante;
-        long idTransacao = 0;
-
-
-        @Override
-        protected String doInBackground(String... params) {
-
-            try {
-                JSONObject jsonObj = new JSONObject();
-
-                jsonObj.put("ChaveAcesso", prefsHelper.getChaveAcesso());
-                jsonObj.put("CodChip", paramsRegistrarTransacao.getImei());
-                jsonObj.put("Bandeira", paramsRegistrarTransacao.getBandeiraCartao());
-                jsonObj.put("CpfCnpjComprador", paramsRegistrarTransacao.getCpfCNPJ());
-                jsonObj.put("nmTitular", "");
-                jsonObj.put("NrCartao", paramsRegistrarTransacao.getNumCartao());
-                jsonObj.put("CodSeguranca", paramsRegistrarTransacao.getCodSeguracaCartao());
-                jsonObj.put("DataValidade", paramsRegistrarTransacao.getDataValidadeCartao());
-                jsonObj.put("Valor", paramsRegistrarTransacao.getValor());
-                jsonObj.put("ValorSemTaxas", paramsRegistrarTransacao.getValorSemTaxas());
-                jsonObj.put("QtParcela", paramsRegistrarTransacao.getNumParcelas());
-                jsonObj.put("DDDCelular", paramsRegistrarTransacao.getDddTelefone());
-                jsonObj.put("NrCelular", paramsRegistrarTransacao.getNumTelefone());
-                jsonObj.put("EnderecoIPComprador", Utils.getLocalIpAddress());
-                jsonObj.put("DsObservacao", paramsRegistrarTransacao.getDescricao());
-                jsonObj.put("CodigoFranquia", "0");
-                jsonObj.put("CpfCnpjAdesao", paramsRegistrarTransacao.getCpfCnpjAdesao());
-                jsonObj.put("NomeTitularAdesao", "");
-                jsonObj.put("UtilizouLeitor", "false");
-                jsonObj.put("Origem", "A");
-                jsonObj.put("ClienteInformadoCartaoInvalido", false);
-                jsonObj.put("LatitudeLongitude", prefsHelper.getLocalizacao());
-                jsonObj.put("SenhaCartao", "");
-                jsonObj.put("OutrasBandeiras", false);
-                // Create the POST object and add the parameters
-
-//                String p = String.valueOf(jsonObj).replaceAll(":", "=");
-                Log.d(TAG, "doInBackground: " + jsonObj.toString());
-
-//                String k = jsonObj.toString()
-//                        .replaceAll(":", "=")
-//                        .replaceAll(",", "&")
-//                        .replaceAll("\"", "")
-//                        .replaceAll("\\{", "")
-//                        .replaceAll("\\}", "");
-//
-//                Log.d(TAG, "doInBackground: " + String.valueOf(k));
-
-                URL url = new URL("http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx/EfetuarVendaCreditoMobile");
-//                url = new URL("https://www.sistemaserveloja.com.br/ServicosWeb/Versao/1.13/Mobile.asmx/EfetuarVendaCreditoMobile");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setDoInput(true);
-                conn.setDoOutput(true);
-                OutputStream outputStream = new BufferedOutputStream(conn.getOutputStream());
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "utf-8"));
-                writer.write(String.valueOf(jsonObj));
-//                writer.write(String.valueOf(k));
-                writer.flush();
-                writer.close();
-                outputStream.close();
-
-
-                InputStream inputStream;
-                // get stream
-                if (conn.getResponseCode() < HttpURLConnection.HTTP_BAD_REQUEST) {
-                    inputStream = conn.getInputStream();
-                } else {
-                    inputStream = conn.getErrorStream();
-                }
-                // parse stream
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-                String temp, json = "";
-                while ((temp = bufferedReader.readLine()) != null) {
-                    json += temp;
-                }
-                if (!json.equals("")) {
-                    Log.d(TAG, "doInBackground: " + json.toString());
-                    return json;
-                }
-
-            } catch (Exception e) {
-                Log.e(TAG, "Falha ao acessar Web service", e);
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-
-        }
-
     }
 
 }

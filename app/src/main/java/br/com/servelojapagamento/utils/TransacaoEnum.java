@@ -26,9 +26,12 @@ public class TransacaoEnum {
         public static final int CREDITO = 1;
     }
 
-    public static class StatusRetorno {
+    public static class StatusSeveloja {
         public static final int CARTAO_EXIGE_INFORMAR_CVV = 1;
         public static final int CARTAO_EXIGE_INFORMAR_SENHA = 2;
+        public static final int TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO = 3;
+        public static final int ENVIANDO_TRANSACAO_SERVELOJA = 4;
+        public static final int TRANSACAO_FINALIZADA = 5;
     }
 
 

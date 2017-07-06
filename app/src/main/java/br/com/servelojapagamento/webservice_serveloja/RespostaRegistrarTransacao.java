@@ -1,4 +1,4 @@
-package br.com.servelojapagamento.modelo;
+package br.com.servelojapagamento.webservice_serveloja;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

@@ -1,4 +1,4 @@
-package br.com.servelojapagamento.mundipagg;
+package br.com.servelojapagamento.webservice_mundipagg;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

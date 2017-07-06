@@ -1,4 +1,4 @@
-package br.com.servelojapagamento.mundipagg;
+package br.com.servelojapagamento.webservice_mundipagg;
 
 import retrofit2.Call;
 import retrofit2.http.Field;

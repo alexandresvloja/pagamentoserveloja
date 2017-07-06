@@ -1,4 +1,4 @@
-package br.com.servelojapagamento.modelo;
+package br.com.servelojapagamento.webservice_serveloja;
 
 /**
  * Created by alexandre on 04/07/2017.

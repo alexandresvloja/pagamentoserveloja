@@ -1,12 +1,7 @@
-package br.com.servelojapagamento.webservice;
+package br.com.servelojapagamento.webservice_serveloja;
 
 import java.util.Map;
 
-import br.com.servelojapagamento.modelo.AdicionarTerminalResposta;
-import br.com.servelojapagamento.modelo.ConteudoResposta;
-import br.com.servelojapagamento.modelo.ObterChaveAcessoResposta;
-import br.com.servelojapagamento.modelo.PedidoPinPadResposta;
-import br.com.servelojapagamento.modelo.UserMobile;
 import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.Body;

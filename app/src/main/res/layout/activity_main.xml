@@ -9,9 +9,16 @@
 
     <Button
         android:id="@+id/ac_main_bt_abrir_dialog"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="abrir dialog" />
+
+    <Button
+        android:id="@+id/ac_main_bt_efetuar_transacao"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="COMPRAR" />
 
 </LinearLayout>

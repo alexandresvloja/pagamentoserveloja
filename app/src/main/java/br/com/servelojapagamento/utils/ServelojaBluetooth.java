@@ -16,7 +16,7 @@ import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
  * Created by Alexandre on 30/06/2017.
  */
 
-public class BluetoothUtils {
+public class ServelojaBluetooth {
 
     private String TAG;
     public static final int SOLICITACAO_HABILITAR_BLUETOOTH = 1000;
@@ -24,7 +24,7 @@ public class BluetoothUtils {
     private BluetoothAdapter bluetoothAdapter;
     private StatusBluetoothListener statusBluetoothListener;
 
-    public BluetoothUtils(Activity activity) {
+    public ServelojaBluetooth(Activity activity) {
         this.TAG = getClass().getSimpleName();
         this.activity = activity;
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();

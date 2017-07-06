@@ -1,4 +1,4 @@
-package br.com.servelojapagamento.modelo;
+package br.com.servelojapagamento.webservice_serveloja;
 
 /**
  * Created by alexandre on 05/07/2017.
@@ -16,6 +16,8 @@ public class TransacaoServeloja {
     private String valorSemTaxas;
     private int tipoTransacao;
     private int numParcelas;
+    private String cpfCnpjComprador;
+    private String cpfCnpjAdesao;
 
     public TransacaoServeloja() {
         comprovante = "";
@@ -23,6 +25,24 @@ public class TransacaoServeloja {
         problemas = "";
         dddTelefone = "";
         numTelefone = "";
+        cpfCnpjComprador = "";
+        cpfCnpjAdesao = "";
+    }
+
+    public String getCpfCnpjAdesao() {
+        return cpfCnpjAdesao;
+    }
+
+    public void setCpfCnpjAdesao(String cpfCnpjAdesao) {
+        this.cpfCnpjAdesao = cpfCnpjAdesao;
+    }
+
+    public String getCpfCnpjComprador() {
+        return cpfCnpjComprador;
+    }
+
+    public void setCpfCnpjComprador(String cpfCnpjComprador) {
+        this.cpfCnpjComprador = cpfCnpjComprador;
     }
 
     public String getComprovante() {

@@ -1,4 +1,4 @@
-package br.com.servelojapagamento.webservice;
+package br.com.servelojapagamento.webservice_serveloja;
 
 import android.app.Activity;
 import android.util.Log;
@@ -11,13 +11,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import br.com.servelojapagamento.interfaces.RespostaTransacaoRegistradaServelojaListener;
-import br.com.servelojapagamento.modelo.ConteudoResposta;
-import br.com.servelojapagamento.modelo.ObterChaveAcessoResposta;
-import br.com.servelojapagamento.modelo.ParamsRegistrarTransacao;
-import br.com.servelojapagamento.modelo.PedidoPinPadResposta;
-import br.com.servelojapagamento.modelo.UserMobile;
 import br.com.servelojapagamento.preferences.PrefsHelper;
 import br.com.servelojapagamento.utils.LoggingInterceptor;
+import br.com.servelojapagamento.utils.TransacaoEnum;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import retrofit2.Call;
@@ -39,10 +35,12 @@ public class ServelojaWebService {
     private String TAG;
     private PrefsHelper prefsHelper;
     private Activity activity;
+    private RespostaTransacaoRegistradaServelojaListener respostaTransacaoRegistradaServelojaListener;
 
-    public ServelojaWebService(Activity activity) {
+    public ServelojaWebService(Activity activity, RespostaTransacaoRegistradaServelojaListener respostaTransacaoRegistradaServelojaListener) {
         this.TAG = getClass().getSimpleName();
         this.prefsHelper = new PrefsHelper(activity);
+        this.respostaTransacaoRegistradaServelojaListener = respostaTransacaoRegistradaServelojaListener;
     }
 
     private void iniciarRetrofit() {
@@ -55,9 +53,9 @@ public class ServelojaWebService {
 
     public void registrarTransacao(ParamsRegistrarTransacao paramsRegistrarTransacao,
                                    final RespostaTransacaoRegistradaServelojaListener respostaTransacaoRegistradaServelojaListener) {
-        iniciarRetrofit();
         Log.d(TAG, "registrarTransacao: ");
         Log.d(TAG, "registrarTransacao: " + paramsRegistrarTransacao);
+        iniciarRetrofit();
         BaseAPI baseAPI = retrofit.create(BaseAPI.class);
         final Call<PedidoPinPadResposta> call = baseAPI.registrarTransacaoPinPad(
                 paramsRegistrarTransacao.getChaveAcesso(),
@@ -145,8 +143,8 @@ public class ServelojaWebService {
     }
 
     public void registrarTransacaoSegura(ParamsRegistrarTransacao paramsRegistrarTransacao) {
+        respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoStatusServeloja(TransacaoEnum.StatusSeveloja.ENVIANDO_TRANSACAO_SERVELOJA);
         JSONObject jsonObj = new JSONObject();
-
         try {
             jsonObj.put("ChaveAcesso", paramsRegistrarTransacao.getChaveAcesso());
             jsonObj.put("CodChip", paramsRegistrarTransacao.getImei());
@@ -195,10 +193,9 @@ public class ServelojaWebService {
             call.enqueue(new Callback<ConteudoResposta>() {
                 @Override
                 public void onResponse(Call<ConteudoResposta> call, Response<ConteudoResposta> response) {
+                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoStatusServeloja(TransacaoEnum.StatusSeveloja.TRANSACAO_FINALIZADA);
                     if (response != null && response.body() != null) {
                         Log.d(TAG, "onResponse: " + response.body());
-
-
                     } else if (response != null) {
                         Log.d(TAG, "onResponse: response " + response.toString());
                         Log.d(TAG, "onResponse: message " + response.message());
@@ -207,9 +204,11 @@ public class ServelojaWebService {
 
                 @Override
                 public void onFailure(Call<ConteudoResposta> call, Throwable t) {
+                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoStatusServeloja(TransacaoEnum.StatusSeveloja.TRANSACAO_FINALIZADA);
                     Log.d(TAG, "onFailure: " + t.getMessage());
                 }
             });
+
 
         } catch (JSONException e) {
             e.printStackTrace();
