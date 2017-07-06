@@ -83,6 +83,15 @@ protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 public Set<BluetoothDevice> getDispositivosPareados()
 ```
 
+* Inicializa a comunicação com a Pinpad passada como parâmetro (BluetoothDevice)
+```java
+public void iniciarComunicacaoPinpad(final BluetoothDevice dispositivo, final RespostaConexaoBlueetothPinpadListener respostaConexaoBlueetothPinpadListener)
+```
+
+* Verifica se o existe comunicação entre o aparelho e a Pinpad
+```java
+servelojaBluetooth.checkPinpadConectado()
+```
 
 
 
