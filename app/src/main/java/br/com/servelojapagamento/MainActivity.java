@@ -35,6 +35,7 @@ import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTransacaoSemTok
 import br.com.servelojapagamento.webservice_mundipagg.RespostaConsultarToken;
 import br.com.servelojapagamento.webservice_mundipagg.RespostaCriarToken;
 import br.com.servelojapagamento.webservice_mundipagg.RespostaTransacaoMundipagg;
+import br.com.servelojapagamento.webservice_serveloja.ServelojaWebService;
 import br.com.servelojapagamento.webservice_serveloja.TransacaoServeloja;
 import br.com.servelojapagamento.webservice_serveloja.UserMobile;
 import br.com.servelojapagamento.preferences.PrefsHelper;
@@ -45,6 +46,8 @@ import br.com.servelojapagamento.utils.TransacaoEnum;
 import br.com.servelojapagamento.utils.Utils;
 import stone.application.enums.ErrorsEnum;
 import stone.utils.Stone;
+
+import static br.com.servelojapagamento.utils.Utils.encriptar;
 
 public class MainActivity extends AppCompatActivity implements
         StatusBluetoothListener, ClickRecyclerViewListener,
@@ -83,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements
         servelojaBluetooth.setStatusBluetoothListener(this);
         servelojaBluetooth.iniciarServicoBluetooth();
 
+
         // setup views
         setupDialogParearDispositivos();
         btAbrirDialogProcurarDispositivos = (Button) findViewById(R.id.ac_main_bt_abrir_dialog);
@@ -113,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements
                     transacaoServeloja.setValor("25");
                     transacaoServeloja.setDddTelefone("79");
                     transacaoServeloja.setNumTelefone("996485108");
-                    transacaoServeloja.setValorSemTaxas("20");
+                    transacaoServeloja.setValorSemTaxas("25");
                     transacaoServeloja.setNumParcelas(TransacaoEnum.QntParcelas.A_VISTA);
                     transacaoServeloja.setUsoTarja(false);
                     transacaoServeloja.setCpfCnpjAdesao("06130856555");
@@ -160,8 +164,8 @@ public class MainActivity extends AppCompatActivity implements
         String refPedido = "154789";
 
 //        servelojaTransacaoUtils.consultarTransacaoPorChavePedido(chavePedido, this);
-        servelojaTransacaoUtils.consultarTransacaoPorReferenciaPedido(refPedido, this);
-
+//        servelojaTransacaoUtils.consultarTransacaoPorReferenciaPedido(refPedido, this);
+        obterChaveAcesso();
 
     }
 
@@ -184,18 +188,18 @@ public class MainActivity extends AppCompatActivity implements
         String codChip = Utils.getIMEI(getApplicationContext());
 
         UserMobile user = new UserMobile("0505424",
-                Utils.encriptar("123456"),
+                encriptar("123456"),
                 usuario, "");
 
-//        UserMobile user = new UserMobile("0800",
-//                encriptar("010101"),
-//                usuario, "");
+        user = new UserMobile("0800",
+                encriptar("010101"),
+                usuario, "");
 
         user.setAppDetails(new UserMobile.App(codChip,
                 "Android", versaoSdk, versaoApp));
 
         prefsHelper.salvarCodChip(codChip);
-
+        new ServelojaWebService(this, null).obterChaveAcesso(user);
 //        servelojaWebService.obterChaveAcesso(user);
     }
 
@@ -355,6 +359,7 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "onRespostaTransacaoCliente: status " + status);
         switch (status) {
             case TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_CVV:
+                servelojaTransacaoUtils.informarCvv("123");
                 break;
             case TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA:
                 break;

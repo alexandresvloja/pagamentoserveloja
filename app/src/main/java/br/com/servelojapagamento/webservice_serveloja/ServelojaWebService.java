@@ -28,9 +28,9 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ServelojaWebService {
 
-    private final String URL = "http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx";
+//    private final String URL = "http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx";
     //    http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx/
-//    private final String URL = "https://www.sistemaserveloja.com.br/ServicosWeb/Versao/1.13/Mobile.asmx";
+    private final String URL = "https://www.sistemaserveloja.com.br/ServicosWeb/Versao/1.13/Mobile.asmx";
     private Retrofit retrofit;
     private String TAG;
     private PrefsHelper prefsHelper;
@@ -173,7 +173,7 @@ public class ServelojaWebService {
 
             Retrofit retrofit = new Retrofit
                     .Builder()
-                    .baseUrl("http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx/")
+                    .baseUrl(URL + "/")
                     .client(new OkHttpClient.Builder()
                             .addInterceptor(new LoggingInterceptor())
                             .connectTimeout(30, TimeUnit.SECONDS)
