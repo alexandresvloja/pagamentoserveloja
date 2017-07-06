@@ -191,9 +191,9 @@ public class MainActivity extends AppCompatActivity implements
                 encriptar("123456"),
                 usuario, "");
 
-        user = new UserMobile("0800",
-                encriptar("010101"),
-                usuario, "");
+//        user = new UserMobile("0800",
+//                encriptar("010101"),
+//                usuario, "");
 
         user.setAppDetails(new UserMobile.App(codChip,
                 "Android", versaoSdk, versaoApp));
@@ -359,6 +359,7 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "onRespostaTransacaoCliente: status " + status);
         switch (status) {
             case TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_CVV:
+
                 servelojaTransacaoUtils.informarCvv("123");
                 break;
             case TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA:

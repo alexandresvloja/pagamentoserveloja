@@ -8,7 +8,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
+
 import java.util.Set;
+
 import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
 
 
@@ -23,6 +25,7 @@ public class ServelojaBluetooth {
     private Activity activity;
     private BluetoothAdapter bluetoothAdapter;
     private StatusBluetoothListener statusBluetoothListener;
+    private boolean servicoIniciado;
 
     public ServelojaBluetooth(Activity activity) {
         this.TAG = getClass().getSimpleName();
@@ -40,10 +43,14 @@ public class ServelojaBluetooth {
         filter.addAction(BluetoothDevice.ACTION_FOUND);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         activity.registerReceiver(mReceiver, filter);
+        servicoIniciado = true;
     }
 
     public void pararServicoBluetooth() {
-        activity.unregisterReceiver(mReceiver);
+        if (servicoIniciado) {
+            activity.unregisterReceiver(mReceiver);
+            servicoIniciado = false;
+        }
     }
 
     public boolean checkBluetoothAtivado() {
