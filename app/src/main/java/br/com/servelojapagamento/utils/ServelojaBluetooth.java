@@ -1,5 +1,6 @@
 package br.com.servelojapagamento.utils;
 
+import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -9,6 +10,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.listener.DexterError;
+import com.karumi.dexter.listener.PermissionRequestErrorListener;
+import com.karumi.dexter.listener.multi.DialogOnAnyDeniedMultiplePermissionsListener;
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
 import java.lang.reflect.Method;
 import java.util.Set;
@@ -47,13 +54,16 @@ public class ServelojaBluetooth {
         this.statusBluetoothListener = statusBluetoothListener;
     }
 
-    public void iniciarServicoBluetooth() {
+    public void iniciarServicoBluetooth(boolean checkPermissoes) {
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         filter.addAction(BluetoothDevice.ACTION_FOUND);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         activity.registerReceiver(mReceiver, filter);
         servicoIniciado = true;
+        if (checkPermissoes) {
+            checkPermissoes();
+        }
     }
 
     public void pararServicoBluetooth() {
@@ -126,6 +136,28 @@ public class ServelojaBluetooth {
         } catch (Exception e) {
             Log.d(TAG, "iniciarComunicacaoPinpad: Exception " + e.getMessage());
         }
+    }
+
+    public void checkPermissoes() {
+        MultiplePermissionsListener dialogMultiplePermissionsListener =
+                DialogOnAnyDeniedMultiplePermissionsListener.Builder
+                        .withContext(activity)
+                        .withTitle("Permissão negada")
+                        .withMessage("Para iniciar a sincronização com a Serveloja, é necessário aceitar esta permissão.")
+                        .withButtonText(android.R.string.ok)
+                        .build();
+        Dexter.withActivity(activity).withPermissions(
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.ACCESS_COARSE_LOCATION)
+                .withListener(dialogMultiplePermissionsListener)
+                .withErrorListener(new PermissionRequestErrorListener() {
+                    @Override
+                    public void onError(DexterError error) {
+                        Log.d(TAG, "onError: " + error.toString());
+                    }
+                })
+                .check();
     }
 
     public boolean checkPinpadConectado() {

@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements
         // passando como parâmetro o callback que compôem os três métodos:
         // onDispositivoEncontradoBluetooth, onEstadoAlteradoBluetooth, onProcuraDispositivoFinalizadaBluetooth
         servelojaBluetooth.setStatusBluetoothListener(this);
-        servelojaBluetooth.iniciarServicoBluetooth();
+        servelojaBluetooth.iniciarServicoBluetooth(false);
 
 
         // setup views
@@ -222,7 +222,6 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onResume() {
         super.onResume();
-        servelojaBluetooth.iniciarServicoBluetooth();
 //        stoneUtils.downloadTabelas();
         if (Stone.isConnectedToPinpad()) {
             Log.d(TAG, "onResume: isConnectedToPinpad");
