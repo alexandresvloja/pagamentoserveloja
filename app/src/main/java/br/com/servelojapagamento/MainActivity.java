@@ -337,17 +337,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onRespostaConexaoBlueetothPinpad(boolean status, List<ErrorsEnum> listaErros) {
-        // conexao via Bluetooth efetuada com sucesso
-        if (status) {
-            if (servelojaBluetooth.checkPinpadConectado())
-                Toast.makeText(this, "Conexao efetuada com sucesso!", Toast.LENGTH_SHORT).show();
-        } else {
-            //
-        }
-    }
-
-    @Override
     public void onRespostaTransacaoCliente(int status) {
         Log.d(TAG, "onRespostaTransacaoCliente: status " + status);
         switch (status) {
@@ -407,4 +396,14 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    @Override
+    public void onRespostaConexaoBlueetothPinpad(boolean status, List<ErrorsEnum> listaErros, String mensagem) {
+        // conexao via Bluetooth efetuada com sucesso
+        if (status) {
+            if (servelojaBluetooth.checkPinpadConectado())
+                Toast.makeText(this, "Conexao efetuada com sucesso!", Toast.LENGTH_SHORT).show();
+        } else {
+            //
+        }
+    }
 }
