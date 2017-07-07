@@ -31,7 +31,10 @@ public class TransacaoEnum {
         public static final int CARTAO_EXIGE_INFORMAR_SENHA = 2;
         public static final int TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO = 3;
         public static final int ENVIANDO_TRANSACAO_SERVELOJA = 4;
-        public static final int TRANSACAO_FINALIZADA = 5;
+        public static final int REGISTRO_TRANSACAO_SERVELOJA_FALHA = 5;
+        public static final int REGISTRO_TRANSACAO_SERVELOJA_SUCESSO = 6;
+        public static final int REGISTRO_TRANSACAO_SEGURA_SERVELOJA_FALHA = 7;
+        public static final int REGISTRO_TRANSACAO_SEGURA_SERVELOJA_SUCESSO = 8;
     }
 
 

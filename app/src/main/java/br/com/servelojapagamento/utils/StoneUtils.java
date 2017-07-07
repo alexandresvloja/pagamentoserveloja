@@ -57,9 +57,7 @@ public class StoneUtils {
 
     private Activity activity;
     private String TAG;
-    private RespostaConexaoBlueetothPinpadListener respostaConexaoBlueetothPinpadListener;
     private boolean modoDesenvolvedor;
-
 
     public StoneUtils(Activity activity) {
         this.TAG = getClass().getSimpleName();
@@ -137,10 +135,6 @@ public class StoneUtils {
         } else {
             return false;
         }
-    }
-
-    public boolean checkPinpadConectado() {
-        return Stone.isConnectedToPinpad();
     }
 
     public void iniciarTransacao(String valor, int tipoTransacao, int qntParcelas,

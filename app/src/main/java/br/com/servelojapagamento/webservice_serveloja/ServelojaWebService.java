@@ -10,7 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import br.com.servelojapagamento.interfaces.RespostaTransacaoRegistradaServelojaListener;
+import br.com.servelojapagamento.interfaces.RespostaObterChaveAcessoListener;
+import br.com.servelojapagamento.interfaces.RespostaTransacaoServelojaListener;
 import br.com.servelojapagamento.preferences.PrefsHelper;
 import br.com.servelojapagamento.utils.LoggingInterceptor;
 import br.com.servelojapagamento.utils.TransacaoEnum;
@@ -35,12 +36,12 @@ public class ServelojaWebService {
     private String TAG;
     private PrefsHelper prefsHelper;
     private Activity activity;
-    private RespostaTransacaoRegistradaServelojaListener respostaTransacaoRegistradaServelojaListener;
+    private RespostaTransacaoServelojaListener respostaTransacaoServelojaListener;
 
-    public ServelojaWebService(Activity activity, RespostaTransacaoRegistradaServelojaListener respostaTransacaoRegistradaServelojaListener) {
+    public ServelojaWebService(Activity activity, RespostaTransacaoServelojaListener respostaTransacaoServelojaListener) {
         this.TAG = getClass().getSimpleName();
         this.prefsHelper = new PrefsHelper(activity);
-        this.respostaTransacaoRegistradaServelojaListener = respostaTransacaoRegistradaServelojaListener;
+        this.respostaTransacaoServelojaListener = respostaTransacaoServelojaListener;
     }
 
     private void iniciarRetrofit() {
@@ -52,9 +53,13 @@ public class ServelojaWebService {
     }
 
     public void registrarTransacao(ParamsRegistrarTransacao paramsRegistrarTransacao,
-                                   final RespostaTransacaoRegistradaServelojaListener respostaTransacaoRegistradaServelojaListener) {
-        Log.d(TAG, "registrarTransacao: ");
-        Log.d(TAG, "registrarTransacao: " + paramsRegistrarTransacao);
+                                   final RespostaTransacaoServelojaListener respostaTransacaoServelojaListener) {
+
+        this.respostaTransacaoServelojaListener.onRespostaTransacaoServeloja(
+                TransacaoEnum.StatusSeveloja.ENVIANDO_TRANSACAO_SERVELOJA,
+                null,
+                "Iniciando envio da transação para base de dados Serveloja.");
+
         iniciarRetrofit();
         BaseAPI baseAPI = retrofit.create(BaseAPI.class);
         final Call<PedidoPinPadResposta> call = baseAPI.registrarTransacaoPinPad(
@@ -84,26 +89,31 @@ public class ServelojaWebService {
             @Override
             public void onResponse(Call<PedidoPinPadResposta> call, Response<PedidoPinPadResposta> response) {
                 Log.d(TAG, "onResponse: ");
-
                 if (response != null && response.body() != null) {
-                    PedidoPinPadResposta pinPadResposta = response.body();
-                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoRegistradaServeloja(true,
-                            pinPadResposta, "");
+                    String mensagem = "Resposta registrar transação gerada com sucesso!";
+                    respostaTransacaoServelojaListener.onRespostaTransacaoServeloja(
+                            TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SERVELOJA_SUCESSO,
+                            response.body(), mensagem);
                 } else {
-                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoRegistradaServeloja(false,
-                            null, "Erro de comunicação com a Serveloja, tente novamente. | response estava null.");
+                    String mensagem = "Resposta registrar transação null | Resposta null";
+                    respostaTransacaoServelojaListener.onRespostaTransacaoServeloja(
+                            TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SERVELOJA_FALHA,
+                            null, mensagem);
                 }
             }
 
             @Override
             public void onFailure(Call<PedidoPinPadResposta> call, Throwable t) {
                 Log.d(TAG, "onFailure: ");
-                respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoRegistradaServeloja(false, null, t.getMessage());
+                respostaTransacaoServelojaListener.onRespostaTransacaoServeloja(
+                        TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SERVELOJA_FALHA,
+                        null,
+                        t.getMessage());
             }
         });
     }
 
-    public void obterChaveAcesso(final UserMobile user) {
+    public void obterChaveAcesso(final UserMobile user, final RespostaObterChaveAcessoListener respostaObterChaveAcessoListener) {
         iniciarRetrofit();
         BaseAPI baseAPI = retrofit.create(BaseAPI.class);
 
@@ -114,36 +124,29 @@ public class ServelojaWebService {
         call.enqueue(new Callback<ObterChaveAcessoResposta>() {
             @Override
             public void onResponse(Call<ObterChaveAcessoResposta> call, Response<ObterChaveAcessoResposta> response) {
-                if (response != null) {
-                    Log.d(TAG, "obterChaveAcesso " + response.body());
-                    ObterChaveAcessoResposta r = response.body();
-                    if (r.getCodRetorno() != 2) {
-                        // tratar erro
-                    } else {
-                        salvarDadosUsuario(r);
-                    }
+                if (response != null && response.body() != null) {
+                    String mensagem = "Resposta obter chave de acesso gerada com sucesso!";
+                    respostaObterChaveAcessoListener.onRespostaObterChaveAcesso(true, response.body(), mensagem);
                 } else {
-                    Log.d(TAG, "onResponse: Falha ao acessar WebService");
+                    String mensagem = "Resposta obter chave de acesso null | Resposta null";
+                    respostaObterChaveAcessoListener.onRespostaObterChaveAcesso(false, response.body(), mensagem);
                 }
             }
 
             @Override
             public void onFailure(Call<ObterChaveAcessoResposta> call, Throwable t) {
-                Log.d(TAG, "onFailure: " + t.getMessage());
+                respostaObterChaveAcessoListener.onRespostaObterChaveAcesso(false, null, t.getMessage());
             }
         });
     }
 
-    private void salvarDadosUsuario(ObterChaveAcessoResposta r) {
-        Log.d(TAG, r.toString());
-        // Coloca as informações obtidas no sharedPreferences
-        prefsHelper.salvarChaveAcesso(r.getChaveAcesso());
-        prefsHelper.salvarDataExpiracao(r.getDataExpiracao());
-        prefsHelper.salvarUsuarioChave(r.getUsuarioChave());
-    }
-
     public void registrarTransacaoSegura(ParamsRegistrarTransacao paramsRegistrarTransacao) {
-        respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoStatusServeloja(TransacaoEnum.StatusSeveloja.ENVIANDO_TRANSACAO_SERVELOJA);
+
+        respostaTransacaoServelojaListener.onRespostaTransacaoServeloja(
+                TransacaoEnum.StatusSeveloja.ENVIANDO_TRANSACAO_SERVELOJA,
+                null,
+                "Iniciando envio da transação para base de dados Serveloja.");
+
         JSONObject jsonObj = new JSONObject();
         try {
             jsonObj.put("ChaveAcesso", paramsRegistrarTransacao.getChaveAcesso());
@@ -182,36 +185,45 @@ public class ServelojaWebService {
                             .build())
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
-
             BaseAPI baseAPI = retrofit.create(BaseAPI.class);
-
             RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json; charset=utf-8"),
                     (jsonObj).toString());
-
             final Call<ConteudoResposta> call = baseAPI.realizarTransacaoSeguraJson(body);
 
             call.enqueue(new Callback<ConteudoResposta>() {
                 @Override
                 public void onResponse(Call<ConteudoResposta> call, Response<ConteudoResposta> response) {
-                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoStatusServeloja(TransacaoEnum.StatusSeveloja.TRANSACAO_FINALIZADA);
+                    Log.d(TAG, "onResponse: ");
                     if (response != null && response.body() != null) {
-                        Log.d(TAG, "onResponse: " + response.body());
-                    } else if (response != null) {
-                        Log.d(TAG, "onResponse: response " + response.toString());
-                        Log.d(TAG, "onResponse: message " + response.message());
+                        String mensagem = "Resposta registrar transação segura gerada com sucesso!";
+                        respostaTransacaoServelojaListener.onRespostaTransacaoServeloja(
+                                TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SEGURA_SERVELOJA_SUCESSO,
+                                response.body(),
+                                mensagem);
+                    } else {
+                        String mensagem = "Resposta registrar transação segura null | Resposta null";
+                        respostaTransacaoServelojaListener.onRespostaTransacaoServeloja(
+                                TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SEGURA_SERVELOJA_FALHA,
+                                response.body(),
+                                mensagem);
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ConteudoResposta> call, Throwable t) {
-                    respostaTransacaoRegistradaServelojaListener.onRespostaTransacaoStatusServeloja(TransacaoEnum.StatusSeveloja.TRANSACAO_FINALIZADA);
                     Log.d(TAG, "onFailure: " + t.getMessage());
+                    respostaTransacaoServelojaListener.onRespostaTransacaoServeloja(
+                            TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SEGURA_SERVELOJA_FALHA,
+                            null,
+                            t.getMessage());
                 }
             });
 
-
         } catch (JSONException e) {
-            e.printStackTrace();
+            respostaTransacaoServelojaListener.onRespostaTransacaoServeloja(
+                    TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SEGURA_SERVELOJA_FALHA,
+                    "Exception",
+                    e.getMessage());
         }
     }
 

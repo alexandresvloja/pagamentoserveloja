@@ -1,13 +1,15 @@
 package br.com.servelojapagamento.utils;
 
 import android.app.Activity;
+import android.os.Build;
 import android.util.Log;
 
 import java.lang.reflect.Field;
 
+import br.com.servelojapagamento.interfaces.RespostaObterChaveAcessoListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoAplicativoListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoClienteListener;
-import br.com.servelojapagamento.interfaces.RespostaTransacaoRegistradaServelojaListener;
+import br.com.servelojapagamento.interfaces.RespostaTransacaoServelojaListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoStoneListener;
 import br.com.servelojapagamento.preferences.PrefsHelper;
 import br.com.servelojapagamento.webservice_mundipagg.MundipaggWebService;
@@ -16,14 +18,18 @@ import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTokenEndereco;
 import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTransacaoSemToken;
 import br.com.servelojapagamento.webservice_serveloja.Bandeira;
 import br.com.servelojapagamento.webservice_serveloja.ConteudoBandeira;
+import br.com.servelojapagamento.webservice_serveloja.ObterChaveAcessoResposta;
 import br.com.servelojapagamento.webservice_serveloja.ParamsRegistrarTransacao;
 import br.com.servelojapagamento.webservice_serveloja.PedidoPinPadResposta;
 import br.com.servelojapagamento.webservice_serveloja.ServelojaWebService;
 import br.com.servelojapagamento.webservice_serveloja.TransacaoServeloja;
+import br.com.servelojapagamento.webservice_serveloja.UserMobile;
 import stone.application.enums.TransactionStatusEnum;
 import stone.database.transaction.TransactionDAO;
 import stone.database.transaction.TransactionObject;
 import stone.providers.TransactionProvider;
+
+import static br.com.servelojapagamento.utils.Utils.encriptar;
 
 /**
  * Efetua a comunicação entre a transação da Stone com a WebService da Serveloja
@@ -32,7 +38,8 @@ import stone.providers.TransactionProvider;
 
 public class ServelojaTransacaoUtils
         implements RespostaTransacaoStoneListener,
-        RespostaTransacaoRegistradaServelojaListener {
+        RespostaTransacaoServelojaListener,
+        RespostaObterChaveAcessoListener {
 
     private Activity activity;
     private String TAG;
@@ -45,6 +52,8 @@ public class ServelojaTransacaoUtils
     private boolean cartaoExigeCvv;
     private boolean cartaoExigeSenha;
     private RespostaTransacaoClienteListener respostaTransacaoClienteListener;
+    private RespostaObterChaveAcessoListener respostaObterChaveAcessoListener;
+    private boolean modoDesenvolvedor;
 
 
     public ServelojaTransacaoUtils(Activity activity) {
@@ -58,8 +67,142 @@ public class ServelojaTransacaoUtils
         iniciarListaConteudoBandeira();
     }
 
-    public void iniciarTransacao(TransacaoServeloja transacaoServeloja,
-                                 RespostaTransacaoClienteListener respostaTransacaoClienteListener) {
+
+    public void iniciarSistemaTransacaoServeloja(boolean modoDesenvolvedor) {
+        this.modoDesenvolvedor = modoDesenvolvedor;
+        stoneUtils.iniciarStone(modoDesenvolvedor);
+    }
+
+    private String tratarData(String data) {
+        int ano = Integer.valueOf(data.substring(0, 2));
+        int mes = Integer.valueOf(data.substring(2));
+        String result = data.substring(2) + "/";
+        result += ano < 60 ? String.valueOf(ano + 2000) : String.valueOf(ano + 1900);
+        return result;
+    }
+
+    private void iniciarListaConteudoBandeira() {
+        Bandeira[] bandeiras = {
+                new Bandeira(2,
+                        "AMEX",
+                        "False",
+                        "True"),
+
+                new Bandeira(18,
+                        "ASSOMISE",
+                        "True",
+                        "True"),
+
+                new Bandeira(4,
+                        "DINERS",
+                        "False",
+                        "True"),
+
+                new Bandeira(16,
+                        "ELO",
+                        "False",
+                        "True"),
+
+                new Bandeira(10,
+                        "FORTBRASIL",
+                        "False",
+                        "True"),
+
+                new Bandeira(7,
+                        "HIPER",
+                        "False",
+                        "True"),
+
+                new Bandeira(5,
+                        "HIPERCARD",
+                        "False",
+                        "True"),
+
+                new Bandeira(3,
+                        "MASTERCARD",
+                        "False",
+                        "True"),
+
+                new Bandeira(6,
+                        "SOROCRED",
+                        "False",
+                        "True"),
+
+                new Bandeira(1,
+                        "VISA",
+                        "False",
+                        "True")
+        };
+        conteudoBandeira = new ConteudoBandeira(1, bandeiras);
+    }
+
+    private void salvarDadosUsuario(ObterChaveAcessoResposta r) {
+        Log.d(TAG, r.toString());
+        // Coloca as informações obtidas no sharedPreferences
+        prefsHelper.salvarChaveAcesso(r.getChaveAcesso());
+        prefsHelper.salvarDataExpiracao(r.getDataExpiracao());
+        prefsHelper.salvarUsuarioChave(r.getUsuarioChave());
+        prefsHelper.salvarCodChip(Utils.getIMEI(activity));
+    }
+
+    private boolean checkExigeCVV(String bandeira) {
+        Log.d(TAG, "checkExigeCVV: " + bandeira);
+        boolean r = false;
+        for (Bandeira b : conteudoBandeira.bandeiras)
+            if (b.getNomeBandeira().toLowerCase().equals(bandeira.toLowerCase())) {
+                r = Boolean.parseBoolean(b.possuiCCV);
+            }
+        return r;
+    }
+
+    private boolean checkExigeSenha(String bandeira) {
+        Log.d(TAG, "checkExigeSenha: " + bandeira);
+        boolean r = false;
+        for (Bandeira b : conteudoBandeira.bandeiras)
+            if (b.getNomeBandeira().toLowerCase().equals(bandeira.toLowerCase())) {
+                Log.d(TAG, "Bandeira: " + b.toString());
+                r = Boolean.parseBoolean(b.possuiSenha);
+            }
+        return r;
+    }
+
+    public void checkPermissao() {
+        stoneUtils.checkPermissoes();
+    }
+
+    public void criarTransacaoSemToken(
+            ParamsCriarTransacaoSemToken transacao,
+            RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.criarTransacaoSemToken(transacao, respostaTransacaoAplicativoListener);
+    }
+
+    public void obterToken(
+            ParamsCriarTokenCartao cartao, ParamsCriarTokenEndereco endereco,
+            RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.criarToken(cartao, endereco, respostaTransacaoAplicativoListener);
+    }
+
+    public void consultarToken(
+            String token,
+            RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.consultarToken(token, respostaTransacaoAplicativoListener);
+    }
+
+    public void consultarTransacaoPorReferenciaPedido(
+            String referencia,
+            RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.consultarTransacaoPorReferenciaPedido(referencia, respostaTransacaoAplicativoListener);
+    }
+
+    public void consultarTransacaoPorChavePedido(
+            String chave,
+            RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.consultarTransacaoPorChavePedido(chave, respostaTransacaoAplicativoListener);
+    }
+
+    public void iniciarTransacao(
+            TransacaoServeloja transacaoServeloja,
+            RespostaTransacaoClienteListener respostaTransacaoClienteListener) {
         Log.d(TAG, "iniciarTransacao: ");
         this.respostaTransacaoClienteListener = respostaTransacaoClienteListener;
         paramsRegistrarTransacao.setValor(transacaoServeloja.getValor());
@@ -114,31 +257,6 @@ public class ServelojaTransacaoUtils
         paramsRegistrarTransacao.setNumCartao(Utils.encriptar(paramsRegistrarTransacao.getNumCartao()));
     }
 
-    public void criarTransacaoSemToken(ParamsCriarTransacaoSemToken transacao,
-                                       RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
-        mundipaggWebService.criarTransacaoSemToken(transacao, respostaTransacaoAplicativoListener);
-    }
-
-    public void obterToken(ParamsCriarTokenCartao cartao, ParamsCriarTokenEndereco endereco,
-                           RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
-        mundipaggWebService.criarToken(cartao, endereco, respostaTransacaoAplicativoListener);
-    }
-
-    public void consultarToken(String token,
-                               RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
-        mundipaggWebService.consultarToken(token, respostaTransacaoAplicativoListener);
-    }
-
-    public void consultarTransacaoPorReferenciaPedido(String referencia,
-                                                      RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
-        mundipaggWebService.consultarTransacaoPorReferenciaPedido(referencia, respostaTransacaoAplicativoListener);
-    }
-
-    public void consultarTransacaoPorChavePedido(String chave,
-                                                 RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
-        mundipaggWebService.consultarTransacaoPorChavePedido(chave, respostaTransacaoAplicativoListener);
-    }
-
     private String getStatusTransacao(TransactionStatusEnum transactionStatusEnum) {
         switch (transactionStatusEnum) {
             case APPROVED:
@@ -151,12 +269,119 @@ public class ServelojaTransacaoUtils
         return "";
     }
 
-    private String tratarData(String data) {
-        int ano = Integer.valueOf(data.substring(0, 2));
-        int mes = Integer.valueOf(data.substring(2));
-        String result = data.substring(2) + "/";
-        result += ano < 60 ? String.valueOf(ano + 2000) : String.valueOf(ano + 1900);
-        return result;
+    /**
+     * Após verificar que a bandeira é aceita pelo autorizador Serveloja, é feito um pré-processamento
+     * efetuar a transação segura
+     */
+    private void preVerificacaoTransacaoSegura() {
+        paramsRegistrarTransacao.setCodSeguracaCartao("");
+        paramsRegistrarTransacao.setSenhaCartao("");
+        Log.d(TAG, "preVerificacaoTransacaoSegura: ");
+        Log.d(TAG, "preVerificacaoTransacaoSegura: " + paramsRegistrarTransacao.toString());
+        if (paramsRegistrarTransacao.getBandeiraCartao().equalsIgnoreCase("assomise")
+                && paramsRegistrarTransacao.getDataValidadeCartao().equals(""))
+            paramsRegistrarTransacao.setDataValidadeCartao("01/20");
+        if (!paramsRegistrarTransacao.getNumBinCartao().equals("") &&
+                !paramsRegistrarTransacao.getDataValidadeCartao().equals("")) {
+            if (checkExigeCVV(paramsRegistrarTransacao.getBandeiraCartao().toLowerCase())) {
+                Log.d(TAG, "iniciarTransacaoServeloja: checkExigeCVV true");
+                cartaoExigeCvv = true;
+                // notifica que é necessário o CVV
+                respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_CVV);
+            } else if (checkExigeSenha(paramsRegistrarTransacao.getBandeiraCartao().toLowerCase())) {
+                Log.d(TAG, "iniciarTransacaoServeloja: checkExigeSenha true");
+                cartaoExigeSenha = true;
+                // notifica que é necessário a SENHA
+                respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA);
+            } else {
+                iniciarTransacaoSegura();
+            }
+        }
+    }
+
+    /**
+     * Na transação SEGURA, pode ser feito a solicitação da CVV, logo, o usuário deverá informar a CVV através
+     * desse método
+     *
+     * @param cvv
+     */
+    public void informarCvv(String cvv) {
+        Log.d(TAG, "informarCvv: ");
+        if (cartaoExigeCvv) {
+            paramsRegistrarTransacao.setCodSeguracaCartao(Utils.encriptar(cvv));
+            // após informar a CVV, verifica a exigência de SENHA
+            if (checkExigeSenha(paramsRegistrarTransacao.getBandeiraCartao().toLowerCase())) {
+                Log.d(TAG, "informarCvv: checkExigeSenha true");
+                cartaoExigeSenha = true;
+                // notifica o usuário para informar a senha
+                respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA);
+            } else {
+                iniciarTransacaoSegura();
+            }
+        }
+    }
+
+    /**
+     * Na transação SEGURA, pode ser feito a solicitação da SENHA, logo, o usuário deverá informar a SENHA através
+     * desse método
+     *
+     * @param senha
+     */
+    public void informarSenha(String senha) {
+        Log.d(TAG, "informarSenha: ");
+        if (cartaoExigeSenha) {
+            paramsRegistrarTransacao.setSenhaCartao(Utils.encriptar(senha));
+            // após informar  senha, é iniciada a transação segura
+            iniciarTransacaoSegura();
+        }
+    }
+
+    private void iniciarTransacaoSegura() {
+        Log.d(TAG, "iniciarTransacaoSegura: ");
+        // criptografia dos campos
+        paramsRegistrarTransacao.setImei(Utils.getIMEI(activity));
+        paramsRegistrarTransacao.setBandeiraCartao(Utils.encriptar(paramsRegistrarTransacao.getBandeiraCartao()));
+        paramsRegistrarTransacao.setNumCartao(Utils.encriptar(paramsRegistrarTransacao.getNumCartao()));
+        paramsRegistrarTransacao.setDataValidadeCartao(Utils.encriptar(paramsRegistrarTransacao.getDataValidadeCartao()));
+        paramsRegistrarTransacao.setIp(Utils.getLocalIpAddress());
+        paramsRegistrarTransacao.setClienteInformouCartaoInvalido(false);
+        paramsRegistrarTransacao.setCpfCnpjAdesao(paramsRegistrarTransacao.getCpfCnpjAdesao());
+        paramsRegistrarTransacao.setCpfCNPJ(Utils.encriptar(paramsRegistrarTransacao.getCpfCNPJ()));
+        // iniciar registro transação
+        Log.d(TAG, "iniciarTransacaoSegura: " + paramsRegistrarTransacao.toString());
+        servelojaWebService.registrarTransacaoSegura(paramsRegistrarTransacao);
+    }
+
+    public void obterChaveAcesso(RespostaObterChaveAcessoListener respostaObterChaveAcessoListener) {
+        // ouvinte do cliente (activity main)
+        this.respostaObterChaveAcessoListener = respostaObterChaveAcessoListener;
+
+        String usuario = "admin";
+        String versaoApp = String.valueOf(Utils.getServelojaVersionApp(activity));
+        String versaoSdk = String.valueOf(Build.VERSION.SDK_INT);
+        String codChip = Utils.getIMEI(activity);
+        UserMobile user = null;
+        if (modoDesenvolvedor) {
+            user = new UserMobile("0505424",
+                    encriptar("123456"),
+                    usuario, "");
+        } else {
+            user = new UserMobile("0800",
+                    encriptar("010101"),
+                    usuario, "");
+        }
+        user.setAppDetails(new UserMobile.App(codChip,
+                "Android", versaoSdk, versaoApp));
+        // a resposta do código de acesso, é passada para essa classe, e em seguida
+        // é tratada (efetuar alguns processos caso necessário) e passa para o cliente
+        servelojaWebService.obterChaveAcesso(user, this);
+    }
+
+    public boolean isModoDesenvolvedor() {
+        return modoDesenvolvedor;
     }
 
     /**
@@ -246,192 +471,18 @@ public class ServelojaTransacaoUtils
         }
     }
 
-    /**
-     * Após verificar que a bandeira é aceita pelo autorizador Serveloja, é feito um pré-processamento
-     * efetuar a transação segura
-     */
-    private void preVerificacaoTransacaoSegura() {
-        paramsRegistrarTransacao.setCodSeguracaCartao("");
-        paramsRegistrarTransacao.setSenhaCartao("");
-        Log.d(TAG, "preVerificacaoTransacaoSegura: ");
-        Log.d(TAG, "preVerificacaoTransacaoSegura: " + paramsRegistrarTransacao.toString());
-        if (paramsRegistrarTransacao.getBandeiraCartao().equalsIgnoreCase("assomise")
-                && paramsRegistrarTransacao.getDataValidadeCartao().equals(""))
-            paramsRegistrarTransacao.setDataValidadeCartao("01/20");
-        if (!paramsRegistrarTransacao.getNumBinCartao().equals("") &&
-                !paramsRegistrarTransacao.getDataValidadeCartao().equals("")) {
-            if (checkExigeCVV(paramsRegistrarTransacao.getBandeiraCartao().toLowerCase())) {
-                Log.d(TAG, "iniciarTransacaoServeloja: checkExigeCVV true");
-                cartaoExigeCvv = true;
-                // notifica que é necessário o CVV
-                respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_CVV);
-            } else if (checkExigeSenha(paramsRegistrarTransacao.getBandeiraCartao().toLowerCase())) {
-                Log.d(TAG, "iniciarTransacaoServeloja: checkExigeSenha true");
-                cartaoExigeSenha = true;
-                // notifica que é necessário a SENHA
-                respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA);
-            } else {
-                iniciarTransacaoSegura();
-            }
-        }
-    }
-
-    /**
-     * Na transação SEGURA, pode ser feito a solicitação da CVV, logo, o usuário deverá informar a CVV através
-     * desse método
-     *
-     * @param cvv
-     */
-    public void informarCvv(String cvv) {
-        Log.d(TAG, "informarCvv: ");
-        if (cartaoExigeCvv) {
-            paramsRegistrarTransacao.setCodSeguracaCartao(Utils.encriptar(cvv));
-            // após informar a CVV, verifica a exigência de SENHA
-            if (checkExigeSenha(paramsRegistrarTransacao.getBandeiraCartao().toLowerCase())) {
-                Log.d(TAG, "informarCvv: checkExigeSenha true");
-                cartaoExigeSenha = true;
-                // notifica o usuário para informar a senha
-                respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA);
-            } else {
-                iniciarTransacaoSegura();
-            }
-        }
-    }
-
-    /**
-     * Na transação SEGURA, pode ser feito a solicitação da SENHA, logo, o usuário deverá informar a SENHA através
-     * desse método
-     *
-     * @param senha
-     */
-    public void informarSenha(String senha) {
-        Log.d(TAG, "informarSenha: ");
-        if (cartaoExigeSenha) {
-            paramsRegistrarTransacao.setSenhaCartao(Utils.encriptar(senha));
-            // após informar  senha, é iniciada a transação segura
-            iniciarTransacaoSegura();
-        }
-    }
-
-    private void iniciarTransacaoSegura() {
-        Log.d(TAG, "iniciarTransacaoSegura: ");
-        // criptografia dos campos
-        paramsRegistrarTransacao.setImei(Utils.getIMEI(activity));
-        paramsRegistrarTransacao.setBandeiraCartao(Utils.encriptar(paramsRegistrarTransacao.getBandeiraCartao()));
-        paramsRegistrarTransacao.setNumCartao(Utils.encriptar(paramsRegistrarTransacao.getNumCartao()));
-        paramsRegistrarTransacao.setDataValidadeCartao(Utils.encriptar(paramsRegistrarTransacao.getDataValidadeCartao()));
-        paramsRegistrarTransacao.setIp(Utils.getLocalIpAddress());
-        paramsRegistrarTransacao.setClienteInformouCartaoInvalido(false);
-        paramsRegistrarTransacao.setCpfCnpjAdesao(paramsRegistrarTransacao.getCpfCnpjAdesao());
-        paramsRegistrarTransacao.setCpfCNPJ(Utils.encriptar(paramsRegistrarTransacao.getCpfCNPJ()));
-        // iniciar registro transação
-        Log.d(TAG, "iniciarTransacaoSegura: " + paramsRegistrarTransacao.toString());
-        servelojaWebService.registrarTransacaoSegura(paramsRegistrarTransacao);
-    }
-
-    /**
-     * Resposta do registro da transação na base de dados Serveloja
-     * Após efetuar a transação com a Stone, este método é chamado
-     *
-     * @param status
-     * @param pedidoPinPadResposta
-     * @param mensagemErro
-     */
     @Override
-    public void onRespostaTransacaoRegistradaServeloja(boolean status, PedidoPinPadResposta pedidoPinPadResposta,
-                                                       String mensagemErro) {
-        Log.d(TAG, "onRespostaTransacaoRegistradaServeloja: status " + status);
-        Log.d(TAG, "onRespostaTransacaoRegistradaServeloja: mensagemErro " + mensagemErro);
-        if (status) {
-            Log.d(TAG, "onRespostaTransacaoRegistradaServeloja: PedidoPinPadResposta " +
-                    pedidoPinPadResposta.toString());
-        }
-
+    public void onRespostaObterChaveAcesso(boolean status, ObterChaveAcessoResposta resposta, String mensagem) {
+        if (status && resposta != null)
+            salvarDadosUsuario(resposta);
+        respostaObterChaveAcessoListener.onRespostaObterChaveAcesso(
+                status, resposta, mensagem);
     }
 
     @Override
-    public void onRespostaTransacaoStatusServeloja(int status) {
+    public void onRespostaTransacaoServeloja(int status, Object object, String mensagem) {
         Log.d(TAG, "onRespostaTransacaoStatusServeloja: status " + status);
         respostaTransacaoClienteListener.onRespostaTransacaoCliente(status);
-    }
-
-    private boolean checkExigeCVV(String bandeira) {
-        Log.d(TAG, "checkExigeCVV: " + bandeira);
-        boolean r = false;
-        for (Bandeira b : conteudoBandeira.bandeiras)
-            if (b.getNomeBandeira().toLowerCase().equals(bandeira.toLowerCase())) {
-                r = Boolean.parseBoolean(b.possuiCCV);
-            }
-        return r;
-    }
-
-    private boolean checkExigeSenha(String bandeira) {
-        Log.d(TAG, "checkExigeSenha: " + bandeira);
-        boolean r = false;
-        for (Bandeira b : conteudoBandeira.bandeiras)
-            if (b.getNomeBandeira().toLowerCase().equals(bandeira.toLowerCase())) {
-                Log.d(TAG, "Bandeira: " + b.toString());
-                r = Boolean.parseBoolean(b.possuiSenha);
-            }
-        return r;
-    }
-
-    private void iniciarListaConteudoBandeira() {
-        Bandeira[] bandeiras = {
-                new Bandeira(2,
-                        "AMEX",
-                        "False",
-                        "True"),
-
-                new Bandeira(18,
-                        "ASSOMISE",
-                        "True",
-                        "True"),
-
-                new Bandeira(4,
-                        "DINERS",
-                        "False",
-                        "True"),
-
-                new Bandeira(16,
-                        "ELO",
-                        "False",
-                        "True"),
-
-                new Bandeira(10,
-                        "FORTBRASIL",
-                        "False",
-                        "True"),
-
-                new Bandeira(7,
-                        "HIPER",
-                        "False",
-                        "True"),
-
-                new Bandeira(5,
-                        "HIPERCARD",
-                        "False",
-                        "True"),
-
-                new Bandeira(3,
-                        "MASTERCARD",
-                        "False",
-                        "True"),
-
-                new Bandeira(6,
-                        "SOROCRED",
-                        "False",
-                        "True"),
-
-                new Bandeira(1,
-                        "VISA",
-                        "False",
-                        "True")
-        };
-        conteudoBandeira = new ConteudoBandeira(1, bandeiras);
     }
 
 }
