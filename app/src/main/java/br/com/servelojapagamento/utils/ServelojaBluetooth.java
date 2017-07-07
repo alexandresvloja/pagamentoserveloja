@@ -79,10 +79,10 @@ public class ServelojaBluetooth {
     }
 
     public boolean iniciarProcuraDispositivos() {
-        if (bluetoothAdapter.isDiscovering()) {
-            bluetoothAdapter.cancelDiscovery();
+        if (!bluetoothAdapter.isDiscovering()) {
+            return bluetoothAdapter.startDiscovery();
         }
-        return bluetoothAdapter.startDiscovery();
+        return false;
     }
 
     public boolean pararProcuraDispositivo() {
@@ -145,6 +145,8 @@ public class ServelojaBluetooth {
                 }
             } catch (Exception e) {
                 Log.d(TAG, "iniciarComunicacaoPinpad: Exception " + e.getMessage());
+                respostaConexaoBlueetothPinpadListener.onRespostaConexaoBlueetothPinpad(false,
+                        null, e.getMessage() + " | Dispositivo selecionado não é suportado.");
             }
         }
     }
@@ -154,6 +156,7 @@ public class ServelojaBluetooth {
         String uuid2 = "00000000-0000-1000-8000";
         for (int i = 0; i < bluetoothDevice.getUuids().length; i++) {
             String uuid = bluetoothDevice.getUuids()[i].toString();
+            Log.d(TAG, "checkProtocoloPinpad: " + uuid);
             if (uuid.contains(uuid1) || uuid.contains(uuid2)) {
                 return true;
             }
