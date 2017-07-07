@@ -1,6 +1,4 @@
-# pagamentoserveloja
-
-## Adicionando a biblioteca ao seu projeto
+# Adicionando a biblioteca ao seu projeto
 Em Project.gradle, deve está assim:
  ```gradle
 allprojects {
