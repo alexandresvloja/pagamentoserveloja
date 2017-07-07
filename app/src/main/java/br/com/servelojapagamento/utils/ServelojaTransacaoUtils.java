@@ -288,13 +288,17 @@ public class ServelojaTransacaoUtils
                 cartaoExigeCvv = true;
                 // notifica que é necessário o CVV
                 respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_CVV);
+                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_CVV,
+                        null,
+                        "Transação segura exige de CVV");
             } else if (checkExigeSenha(paramsRegistrarTransacao.getBandeiraCartao().toLowerCase())) {
                 Log.d(TAG, "iniciarTransacaoServeloja: checkExigeSenha true");
                 cartaoExigeSenha = true;
                 // notifica que é necessário a SENHA
                 respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA);
+                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA,
+                        null,
+                        "Transação segura exige de SENHA");
             } else {
                 iniciarTransacaoSegura();
             }
@@ -317,7 +321,9 @@ public class ServelojaTransacaoUtils
                 cartaoExigeSenha = true;
                 // notifica o usuário para informar a senha
                 respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA);
+                        TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA,
+                        null,
+                        "Transação segura exige de SENHA");
             } else {
                 iniciarTransacaoSegura();
             }
@@ -433,7 +439,9 @@ public class ServelojaTransacaoUtils
                 if (paramsRegistrarTransacao.getTipoTransacao() == TransacaoEnum.TipoTransacao.DEBITO) {
                     // enviar erro
                     respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                            TransacaoEnum.StatusSeveloja.TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO);
+                            TransacaoEnum.StatusSeveloja.TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO,
+                            null,
+                            "Transação segura não permite operação de débito");
                 } else {
                     // indicando que o erro foi referente a tarja
                     Log.d(TAG, "onRespostaTransacaoStone: seguindo o fluxo para transação com tarja");
@@ -482,7 +490,7 @@ public class ServelojaTransacaoUtils
     @Override
     public void onRespostaTransacaoServeloja(int status, Object object, String mensagem) {
         Log.d(TAG, "onRespostaTransacaoStatusServeloja: status " + status);
-        respostaTransacaoClienteListener.onRespostaTransacaoCliente(status);
+        respostaTransacaoClienteListener.onRespostaTransacaoCliente(status, object, mensagem);
     }
 
 }

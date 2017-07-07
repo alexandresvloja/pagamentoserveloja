@@ -314,11 +314,10 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onRespostaTransacaoCliente(int status) {
+    public void onRespostaTransacaoCliente(int status, Object object, String mensagem) {
         Log.d(TAG, "onRespostaTransacaoCliente: status " + status);
         switch (status) {
             case TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_CVV:
-
                 servelojaTransacaoUtils.informarCvv("123");
                 break;
             case TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_SENHA:
@@ -327,9 +326,6 @@ public class MainActivity extends AppCompatActivity implements
                 break;
             case TransacaoEnum.StatusSeveloja.ENVIANDO_TRANSACAO_SERVELOJA:
                 abrirProgressoDialog("Aguarde", "Estabelecendo comunicação com a Serveloja, por favor, aguarde...");
-                break;
-            case TransacaoEnum.StatusSeveloja.TRANSACAO_FINALIZADA:
-                fecharProgressoDialog();
                 break;
             default:
                 break;

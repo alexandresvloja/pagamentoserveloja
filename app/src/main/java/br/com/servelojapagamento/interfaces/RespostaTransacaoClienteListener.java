@@ -6,6 +6,6 @@ package br.com.servelojapagamento.interfaces;
 
 public interface RespostaTransacaoClienteListener {
 
-    void onRespostaTransacaoCliente(int status);
+    void onRespostaTransacaoCliente(int status, Object object, String mensagem);
 
 }
