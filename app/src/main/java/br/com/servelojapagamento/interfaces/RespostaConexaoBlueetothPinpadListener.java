@@ -10,6 +10,6 @@ import stone.application.enums.ErrorsEnum;
 
 public interface RespostaConexaoBlueetothPinpadListener {
 
-    void onRespostaConexaoBlueetothPinpad(boolean status, List<ErrorsEnum> listaErros);
+    void onRespostaConexaoBlueetothPinpad(boolean status, List<ErrorsEnum> listaErros, String mensagem);
 
 }

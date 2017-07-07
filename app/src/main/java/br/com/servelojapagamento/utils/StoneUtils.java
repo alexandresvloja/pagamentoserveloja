@@ -110,10 +110,7 @@ public class StoneUtils {
         Dexter.withActivity(activity).withPermissions(
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.ACCESS_NETWORK_STATE,
-                Manifest.permission.INTERNET,
-                Manifest.permission.BLUETOOTH,
-                Manifest.permission.BLUETOOTH_ADMIN,
-                Manifest.permission.ACCESS_COARSE_LOCATION)
+                Manifest.permission.INTERNET)
                 .withListener(dialogMultiplePermissionsListener)
                 .withErrorListener(new PermissionRequestErrorListener() {
                     @Override

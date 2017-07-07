@@ -321,7 +321,6 @@ public class MainActivity extends AppCompatActivity implements
     public void onEstadoAlteradoBluetooth(int estadoAtual, int estadoAnterior) {
         Log.d(TAG, "onEstadoAlteradoBluetooth: estadoAtual " + estadoAtual);
         Log.d(TAG, "onEstadoAlteradoBluetooth: estadoAnterior " + estadoAnterior);
-
     }
 
     @Override
@@ -332,12 +331,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onClickDispositivo(BluetoothDevice dispositivo) {
-        if (dispositivo.getAddress().matches("^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$")) {
-            if (dispositivo.getName().contains("PAX")) {
-                // passando como parâmetro o callback onRespostaConexaoBlueetothPinpad
-                servelojaBluetooth.iniciarComunicacaoPinpad(dispositivo, this);
-            }
-        }
+        servelojaBluetooth.iniciarComunicacaoPinpad(dispositivo, this);
         servelojaBluetooth.pararProcuraDispositivo();
         dialogParearDispositivos.dismiss();
     }
