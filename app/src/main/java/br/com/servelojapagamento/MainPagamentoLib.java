@@ -3,7 +3,6 @@ package br.com.servelojapagamento;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -35,21 +34,15 @@ import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTransacaoSemTok
 import br.com.servelojapagamento.webservice_mundipagg.RespostaConsultarToken;
 import br.com.servelojapagamento.webservice_mundipagg.RespostaCriarToken;
 import br.com.servelojapagamento.webservice_mundipagg.RespostaTransacaoMundipagg;
-import br.com.servelojapagamento.webservice_serveloja.ServelojaWebService;
 import br.com.servelojapagamento.webservice_serveloja.TransacaoServeloja;
-import br.com.servelojapagamento.webservice_serveloja.UserMobile;
 import br.com.servelojapagamento.preferences.PrefsHelper;
 import br.com.servelojapagamento.utils.ServelojaBluetooth;
 import br.com.servelojapagamento.utils.ServelojaTransacaoUtils;
-import br.com.servelojapagamento.utils.StoneUtils;
 import br.com.servelojapagamento.utils.TransacaoEnum;
-import br.com.servelojapagamento.utils.Utils;
 import stone.application.enums.ErrorsEnum;
 import stone.utils.Stone;
 
-import static br.com.servelojapagamento.utils.Utils.encriptar;
-
-public class MainActivity extends AppCompatActivity implements
+public class MainPagamentoLib extends AppCompatActivity implements
         StatusBluetoothListener, ClickRecyclerViewListener,
         RespostaConexaoBlueetothPinpadListener, RespostaTransacaoClienteListener, RespostaTransacaoAplicativoListener {
 
@@ -73,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_mainpagamentolib);
         TAG = getClass().getSimpleName();
         servelojaBluetooth = new ServelojaBluetooth(this);
 //        stoneUtils = new StoneUtils(this);
@@ -122,9 +115,9 @@ public class MainActivity extends AppCompatActivity implements
                     transacaoServeloja.setUsoTarja(false);
                     transacaoServeloja.setCpfCnpjAdesao("06130856555");
                     transacaoServeloja.setCpfCnpjComprador("06130856555");
-                    servelojaTransacaoUtils.iniciarTransacao(transacaoServeloja, MainActivity.this);
+                    servelojaTransacaoUtils.iniciarTransacao(transacaoServeloja, MainPagamentoLib.this);
                 } else {
-                    Toast.makeText(MainActivity.this, "Pinpad não conectada.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainPagamentoLib.this, "Pinpad não conectada.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
