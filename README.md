@@ -86,7 +86,7 @@ public Set<BluetoothDevice> getDispositivosPareados()
 public void iniciarComunicacaoPinpad(final BluetoothDevice dispositivo, final RespostaConexaoBlueetothPinpadListener respostaConexaoBlueetothPinpadListener)
 ```
 
-* Verifica se o existe comunicação entre o aparelho e a Pinpad
+* Verifica se existe comunicação entre o aparelho e a Pinpad
 ```java
 servelojaBluetooth.checkPinpadConectado()
 ```
@@ -193,7 +193,10 @@ Após procurar os dispositivos é necessário selecionar algum BluetoothDevice para
 public void iniciarComunicacaoPinpad(final BluetoothDevice dispositivo, final RespostaConexaoBlueetothPinpadListener respostaConexaoBlueetothPinpadListener);
 
 @Override
-public void onRespostaConexaoBlueetothPinpad(boolean status, List<ErrorsEnum> listaErros) {
+public void onRespostaConexaoBlueetothPinpad(boolean status, List<ErrorsEnum> listaErros, String mensagem) {
+    Log.d(TAG, "onRespostaConexaoBlueetothPinpad: status " + status);
+    // o atributo mensagem, é utilizado para receber alguma observação da comunicação
+    Log.d(TAG, "onRespostaConexaoBlueetothPinpad: mensagem " + mensagem);
     // TRUE, caso a comunicação tenha sido estabelecida
     if (status) {
         // confirmação da comunicação Bluetooth
