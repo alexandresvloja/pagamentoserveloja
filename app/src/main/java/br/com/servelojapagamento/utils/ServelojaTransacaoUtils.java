@@ -23,6 +23,7 @@ import br.com.servelojapagamento.webservice_serveloja.ParamsRegistrarTransacao;
 import br.com.servelojapagamento.webservice_serveloja.ServelojaWebService;
 import br.com.servelojapagamento.webservice_serveloja.TransacaoServeloja;
 import br.com.servelojapagamento.webservice_serveloja.UserMobile;
+import stone.application.enums.ErrorsEnum;
 import stone.application.enums.TransactionStatusEnum;
 import stone.database.transaction.TransactionDAO;
 import stone.database.transaction.TransactionObject;
@@ -390,6 +391,82 @@ public class ServelojaTransacaoUtils
         return modoDesenvolvedor;
     }
 
+    private void tratarErroStone(ErrorsEnum errorsEnum) {
+        String mensagem = "";
+        int codErro = 0;
+        switch (errorsEnum) {
+            //Caso as tabelas não estejam atualizadas, atualizar e refazer o fluxo
+            case NEED_LOAD_TABLES: {
+                mensagem = "Tabelas desatualizadas";
+            }
+            break;
+            case OPERATION_CANCELLED_BY_USER: {
+                mensagem = "Operação cancelada pelo usuário";
+            }
+            break;
+            case TRANSACTION_NOT_APPROVED: {
+                mensagem = "Transação não aprovada";
+            }
+            break;
+            case CONNECTION_NOT_FOUND: {
+                mensagem = "Sem conexão com a Internet";
+            }
+            break;
+            case GENERIC_ERROR: {
+                mensagem = "Erro genérico";
+            }
+            break;
+            case PINPAD_CONNECTION_NOT_FOUND: {
+                mensagem = "Sem conexão com a Pinpad";
+            }
+            break;
+            case INVALID_AMOUNT: {
+                mensagem = "Valor inválido para passar a transação";
+            }
+            break;
+            case CARD_REMOVED_BY_USER: {
+                mensagem = "Cartão removido pelo usuário indevidamente";
+            }
+            break;
+            case TIME_OUT: {
+                mensagem = "Tempo expirado, tente novamente";
+            }
+            break;
+            case CANT_READ_CARD_HOLDER_INFORMATION: {
+                mensagem = "Erro na leitura das informações do cartão, tente novamente";
+            }
+            break;
+            case DEVICE_NOT_COMPATIBLE: {
+                mensagem = "Dispositivo bluetooth não possui a biblioteca compartilhada";
+            }
+            break;
+            case UNEXPECTED_STATUS_COMMAND: {
+                mensagem = "Status de um comando inesperado, tente novamente";
+            }
+            break;
+            case NULL_RESPONSE: {
+                mensagem = "Não houve resposta do Pinpad";
+            }
+            break;
+            case INVALID_TRANSACTION: {
+                mensagem = "Transação inválida";
+            }
+            break;
+            case ACCEPTOR_REJECTION: {
+                mensagem = "Transação rejeitada pelo autorizador";
+            }
+            break;
+            case PINPAD_WITHOUT_STONE_KEY: {
+                mensagem = "Cartão de chip inserido pela tarja";
+            }
+            break;
+        }
+        respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                TransacaoEnum.StatusSeveloja.TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO,
+                null,
+                mensagem);
+    }
+
     /**
      * Resposta da transação via Stone
      * ao efetuar esta transação, será efetuado o registro na base de dados da Serveloja
@@ -410,14 +487,19 @@ public class ServelojaTransacaoUtils
         String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
 
         if (!(cartaoBandeira.toLowerCase().equals("mastercard") || cartaoBandeira.toLowerCase().equals("visa"))) {
-            // falha "Passar um cartão da bandeira " + bandeira + usando o chip não é suportado.\n Por favor " +
-            // repita a operação usando a tarja magnética"
+            String mensagem = "Passar esse cartão usando o CHIP não é suportado, por favor repita " +
+                    "a operação usando Tarja Magnética";
+            respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                    TransacaoEnum.StatusSeveloja.TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO,
+                    null,
+                    mensagem);
         }
 
         if (status) {
             if (transactionProvider.getListOfErrors().size() > 0) {
                 Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone - lista de erro > 0");
                 // Usuario Passou cartão chipado que não é master ou visa
+                tratarErroStone(transactionProvider.getListOfErrors().get(0));
             } else {
                 Log.d(TAG, "onRespostaTransacaoStone: transação efetuada com sucesso");
                 // após verificação de não ocorrência de erros, procede para preparação dos parâmetros
