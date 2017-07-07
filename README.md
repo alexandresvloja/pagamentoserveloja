@@ -14,7 +14,7 @@ Em App.gradle, deve está assim:
 ```gradle
 dependencies {
     ...
-    compile 'com.github.alexandresvloja:pagamentoserveloja:1.0.0'
+    compile 'com.github.alexandresvloja:pagamentoserveloja:1.0.5'
 }
 ```
 # Utilizando a biblioteca
@@ -62,15 +62,17 @@ public boolean pararProcuraDispositivo()
 public void solicitarAtivacaoBluetooth()
 ```
 
-* Constante utilizada para requisição de ativação do Bluetooth. Através dela a aplicação pode interceptar e tratar a resposta da requisição.
-```java
-public static final int SOLICITACAO_HABILITAR_BLUETOOTH = 1000;
+* Na requisição de ativação do Bluetooth, a aplicação pode interceptar e tratar sua resposta, verificando se a requisição foi feita pela constante: 
 
+    * ServelojaBluetooth.SOLICITACAO_HABILITAR_BLUETOOTH
+```java
 @Override
 protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     Log.d(TAG, "onActivityResult: requestCode " + requestCode);
-    if (requestCode == ServelojaBluetooth.SOLICITACAO_HABILITAR_BLUETOOTH) {
+    // resultCode = -1, indica que o usuário aceitou habilitar o Bluetooth
+    if (requestCode == ServelojaBluetooth.SOLICITACAO_HABILITAR_BLUETOOTH && resultCode == -1) {
+        Log.d(TAG, "onActivityResult: resultCode " + resultCode);
         ...
     }
 }
