@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements
     private Button btEfetuarTransacao;
     private MaterialDialog materialDialogProgresso;
     // outros
-    private StoneUtils stoneUtils;
+//    private StoneUtils stoneUtils;
     private ServelojaTransacaoUtils servelojaTransacaoUtils;
     //    private ServelojaWebService servelojaWebService;
     private PrefsHelper prefsHelper;
@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_main);
         TAG = getClass().getSimpleName();
         servelojaBluetooth = new ServelojaBluetooth(this);
-        stoneUtils = new StoneUtils(this);
+//        stoneUtils = new StoneUtils(this);
         servelojaTransacaoUtils = new ServelojaTransacaoUtils(this);
 //        servelojaWebService = new ServelojaWebService(this);
         prefsHelper = new PrefsHelper(this);
@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements
         btAbrirDialogProcurarDispositivos.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stoneUtils.iniciarStone(true);
+                servelojaTransacaoUtils.iniciarSistemaTransacaoServeloja(true);
                 if (servelojaBluetooth.checkBluetoothAtivado()) {
                     addDispositivosJaPareados();
                     servelojaBluetooth.iniciarProcuraDispositivos();
@@ -129,7 +129,6 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
-        stoneUtils.checkPermissoes();
         ParamsCriarTokenCartao cartao = new ParamsCriarTokenCartao();
         cartao.setCartaoAno("2020");
         cartao.setCartaoBandeira("VISA");
@@ -165,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements
 
 //        servelojaTransacaoUtils.consultarTransacaoPorChavePedido(chavePedido, this);
 //        servelojaTransacaoUtils.consultarTransacaoPorReferenciaPedido(refPedido, this);
-        obterChaveAcesso();
+//        obterChaveAcesso();
 
     }
 
@@ -179,28 +178,6 @@ public class MainActivity extends AppCompatActivity implements
 
     private void criarTransacaoSemToken(ParamsCriarTransacaoSemToken transacao) {
         servelojaTransacaoUtils.criarTransacaoSemToken(transacao, this);
-    }
-
-    private void obterChaveAcesso() {
-        String usuario = "admin";
-        String versaoApp = String.valueOf(Utils.getServelojaVersionApp(getApplicationContext()));
-        String versaoSdk = String.valueOf(Build.VERSION.SDK_INT);
-        String codChip = Utils.getIMEI(getApplicationContext());
-
-        UserMobile user = new UserMobile("0505424",
-                encriptar("123456"),
-                usuario, "");
-
-//        user = new UserMobile("0800",
-//                encriptar("010101"),
-//                usuario, "");
-
-        user.setAppDetails(new UserMobile.App(codChip,
-                "Android", versaoSdk, versaoApp));
-
-        prefsHelper.salvarCodChip(codChip);
-        new ServelojaWebService(this, null).obterChaveAcesso(user);
-//        servelojaWebService.obterChaveAcesso(user);
     }
 
     @Override
