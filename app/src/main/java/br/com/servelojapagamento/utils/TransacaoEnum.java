@@ -37,5 +37,4 @@ public class TransacaoEnum {
         public static final int REGISTRO_TRANSACAO_SEGURA_SERVELOJA_SUCESSO = 8;
     }
 
-
 }

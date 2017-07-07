@@ -320,6 +320,14 @@ public class MainPagamentoLib extends AppCompatActivity implements
             case TransacaoEnum.StatusSeveloja.ENVIANDO_TRANSACAO_SERVELOJA:
                 abrirProgressoDialog("Aguarde", "Estabelecendo comunicação com a Serveloja, por favor, aguarde...");
                 break;
+            case TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SEGURA_SERVELOJA_FALHA:
+                break;
+            case TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SEGURA_SERVELOJA_SUCESSO:
+                break;
+            case TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SERVELOJA_FALHA:
+                break;
+            case TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SERVELOJA_SUCESSO:
+                break;
             default:
                 break;
         }

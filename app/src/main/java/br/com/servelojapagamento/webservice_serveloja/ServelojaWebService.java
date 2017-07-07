@@ -29,9 +29,10 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ServelojaWebService {
 
-    private final String URL = "http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx";
+    private final String URL_DEV = "http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx";
     //    http://desenvolvimento.redeserveloja.com/ServicosWeb/Versao/1.13/Mobile.asmx/
-//    private final String URL = "https://www.sistemaserveloja.com.br/ServicosWeb/Versao/1.13/Mobile.asmx";
+    private final String URL_PRO = "https://www.sistemaserveloja.com.br/ServicosWeb/Versao/1.13/Mobile.asmx";
+    private String URL = URL_DEV;
     private Retrofit retrofit;
     private String TAG;
     private PrefsHelper prefsHelper;
@@ -50,6 +51,13 @@ public class ServelojaWebService {
                 .baseUrl(URL + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
+    }
+
+    public void setModoDesenvolvedor(boolean modoDesenvolvedor) {
+        if (modoDesenvolvedor)
+            URL = URL_DEV;
+        else
+            URL = URL_PRO;
     }
 
     public void registrarTransacao(ParamsRegistrarTransacao paramsRegistrarTransacao,

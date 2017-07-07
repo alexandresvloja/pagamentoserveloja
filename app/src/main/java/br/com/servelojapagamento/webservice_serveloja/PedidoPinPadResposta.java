@@ -14,7 +14,6 @@ public class PedidoPinPadResposta {
     public int codRetorno;
     @SerializedName("IdTransacao")
     public String idPedido;
-
     @SerializedName("DsErro")
     public DsErro[] dsErro;
 

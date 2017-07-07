@@ -20,7 +20,6 @@ import br.com.servelojapagamento.webservice_serveloja.Bandeira;
 import br.com.servelojapagamento.webservice_serveloja.ConteudoBandeira;
 import br.com.servelojapagamento.webservice_serveloja.ObterChaveAcessoResposta;
 import br.com.servelojapagamento.webservice_serveloja.ParamsRegistrarTransacao;
-import br.com.servelojapagamento.webservice_serveloja.PedidoPinPadResposta;
 import br.com.servelojapagamento.webservice_serveloja.ServelojaWebService;
 import br.com.servelojapagamento.webservice_serveloja.TransacaoServeloja;
 import br.com.servelojapagamento.webservice_serveloja.UserMobile;
@@ -67,10 +66,11 @@ public class ServelojaTransacaoUtils
         iniciarListaConteudoBandeira();
     }
 
-
     public void iniciarSistemaTransacaoServeloja(boolean modoDesenvolvedor) {
         this.modoDesenvolvedor = modoDesenvolvedor;
         stoneUtils.iniciarStone(modoDesenvolvedor);
+        mundipaggWebService.setModoDesenvolvedor(modoDesenvolvedor);
+        servelojaWebService.setModoDesenvolvedor(modoDesenvolvedor);
     }
 
     private String tratarData(String data) {
@@ -407,7 +407,6 @@ public class ServelojaTransacaoUtils
                 transactionDAO.getLastTransactionId());
 
         String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
-        ;
         String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
 
         if (!(cartaoBandeira.toLowerCase().equals("mastercard") || cartaoBandeira.toLowerCase().equals("visa"))) {

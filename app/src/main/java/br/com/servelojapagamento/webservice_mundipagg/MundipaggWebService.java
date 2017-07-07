@@ -32,6 +32,10 @@ public class MundipaggWebService {
                 .build();
     }
 
+    public void setModoDesenvolvedor(boolean modoDesenvolvedor){
+
+    }
+
     public void criarTransacaoSemToken(ParamsCriarTransacaoSemToken paramsCriarTransacaoSemToken,
                                        final RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
         Log.d(TAG, "criarTransacaoSemToken: ");
