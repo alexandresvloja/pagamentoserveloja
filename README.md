@@ -34,9 +34,9 @@ public ServelojaBluetooth(Activity activity)
 public void setStatusBluetoothListener(StatusBluetoothListener statusBluetoothListener)
 ```
 
-* Após chamar esse método, um serviço será inicializado, e assim, detectará todas alterações referente aos Status do Bluetooth, onde essas alterações serão passadas para o ouvinte definido no método setStatusBluetoothListener()
+* Após chamar esse método, um serviço será inicializado, e assim, detectará todas alterações referente aos Status do Bluetooth, onde essas alterações serão passadas para o ouvinte definido no método setStatusBluetoothListener(). É passado como parâmetro, se deseja que a própria biblioteca, gerencie as permissões para utilizar o Bluetooth do aparelho.
 ```java
-public void iniciarServicoBluetooth()
+public void iniciarServicoBluetooth(boolean checkPermissoes)
 ```
 
 * Pára o serviço do Bluetooth
@@ -108,6 +108,7 @@ public class BluetoothActivity extends AppCompatActivity implements StatusBlueto
 
         servelojaBluetooth = new ServelojaBluetooth(this);
         servelojaBluetooth.setStatusBluetoothListener(this);
+        servelojaBluetooth.iniciarServicoBluetooth(true);
 
         btAbrirDialogProcurarDispositivos = (Button) findViewById(R.id.ac_main_bt_abrir_dialog);
 
