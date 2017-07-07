@@ -486,20 +486,18 @@ public class ServelojaTransacaoUtils
         String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
         String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
 
-        if (!(cartaoBandeira.toLowerCase().equals("mastercard") || cartaoBandeira.toLowerCase().equals("visa"))) {
-            String mensagem = "Passar esse cartão usando o CHIP não é suportado, por favor repita " +
-                    "a operação usando Tarja Magnética";
-            respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                    TransacaoEnum.StatusSeveloja.TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO,
-                    null,
-                    mensagem);
-        }
-
         if (status) {
             if (transactionProvider.getListOfErrors().size() > 0) {
                 Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone - lista de erro > 0");
                 // Usuario Passou cartão chipado que não é master ou visa
-                tratarErroStone(transactionProvider.getListOfErrors().get(0));
+                if (!(cartaoBandeira.toLowerCase().equals("mastercard") || cartaoBandeira.toLowerCase().equals("visa"))) {
+                    String mensagem = "Passar esse cartão usando o CHIP não é suportado, por favor repita " +
+                            "a operação usando Tarja Magnética";
+                    respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                            TransacaoEnum.StatusSeveloja.MENSAGEM_ERRO_OBSERVACAO,
+                            null,
+                            mensagem);
+                }
             } else {
                 Log.d(TAG, "onRespostaTransacaoStone: transação efetuada com sucesso");
                 // após verificação de não ocorrência de erros, procede para preparação dos parâmetros
@@ -514,6 +512,7 @@ public class ServelojaTransacaoUtils
             // o fluxo seja para outras bandeiras.
             if (transactionProvider.getListOfErrors().size() > 0) {
                 Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone");
+                tratarErroStone(transactionProvider.getListOfErrors().get(0));
                 // indicando erro de transação com a Stone
             } else {
                 // transação de débito via tarja, não é permitida
