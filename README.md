@@ -37,7 +37,7 @@ public void setStatusBluetoothListener(StatusBluetoothListener statusBluetoothLi
 public void iniciarServicoBluetooth(boolean checkPermissoes)
 ```
 
-* Pára o serviço do Bluetooth
+* Para o serviço do Bluetooth
 ```java
 public void pararServicoBluetooth()
 ```
@@ -52,7 +52,7 @@ public boolean checkBluetoothAtivado()
 public boolean iniciarProcuraDispositivos()
 ```
 
-* Pára a procura por dispositivos.
+* Para a procura por dispositivos.
 ```java
 public boolean pararProcuraDispositivo()
 ```
