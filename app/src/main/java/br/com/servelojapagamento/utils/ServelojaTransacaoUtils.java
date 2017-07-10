@@ -462,7 +462,7 @@ public class ServelojaTransacaoUtils
             break;
         }
         respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                TransacaoEnum.StatusSeveloja.TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO,
+                TransacaoEnum.StatusSeveloja.MENSAGEM_ERRO_OBSERVACAO,
                 null,
                 mensagem);
     }
