@@ -5,7 +5,9 @@ import android.os.Build;
 import android.util.Log;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
+import br.com.servelojapagamento.interfaces.RespostaInstalacaoTabelasStone;
 import br.com.servelojapagamento.interfaces.RespostaObterChaveAcessoListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoAplicativoListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoClienteListener;
@@ -69,9 +71,34 @@ public class ServelojaTransacaoUtils
 
     public void iniciarSistemaTransacaoServeloja(boolean modoDesenvolvedor) {
         this.modoDesenvolvedor = modoDesenvolvedor;
-        stoneUtils.iniciarStone(modoDesenvolvedor);
+        stoneUtils.iniciarStone(modoDesenvolvedor, false, 0);
         mundipaggWebService.setModoDesenvolvedor(modoDesenvolvedor);
         servelojaWebService.setModoDesenvolvedor(modoDesenvolvedor);
+    }
+
+    public void iniciarSistemaTransacaoServeloja(boolean modoDesenvolvedor, boolean instalarTabelas, int indiceTabela) {
+        this.modoDesenvolvedor = modoDesenvolvedor;
+        stoneUtils.iniciarStone(modoDesenvolvedor, instalarTabelas, indiceTabela);
+        mundipaggWebService.setModoDesenvolvedor(modoDesenvolvedor);
+        servelojaWebService.setModoDesenvolvedor(modoDesenvolvedor);
+    }
+
+    public void iniciarSistemaTransacaoServeloja(boolean modoDesenvolvedor,
+                                                 boolean instalarTabelas,
+                                                 int indiceTabela,
+                                                 RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
+        this.modoDesenvolvedor = modoDesenvolvedor;
+        stoneUtils.iniciarStone(modoDesenvolvedor, instalarTabelas, indiceTabela, respostaInstalacaoTabelasStone);
+        mundipaggWebService.setModoDesenvolvedor(modoDesenvolvedor);
+        servelojaWebService.setModoDesenvolvedor(modoDesenvolvedor);
+    }
+
+    public void downloadTabelas1(Activity activity, List<String> stoneCodeList, final RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
+        stoneUtils.downloadTabelas1(activity, stoneCodeList, respostaInstalacaoTabelasStone);
+    }
+
+    public void downloadTabelas2(RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
+        stoneUtils.downloadTabelas2(respostaInstalacaoTabelasStone);
     }
 
     private String tratarData(String data) {

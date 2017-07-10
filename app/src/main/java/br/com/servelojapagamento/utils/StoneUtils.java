@@ -2,9 +2,7 @@ package br.com.servelojapagamento.utils;
 
 import android.Manifest;
 import android.app.Activity;
-import android.bluetooth.BluetoothDevice;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.listener.DexterError;
@@ -12,25 +10,21 @@ import com.karumi.dexter.listener.PermissionRequestErrorListener;
 import com.karumi.dexter.listener.multi.DialogOnAnyDeniedMultiplePermissionsListener;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import br.com.servelojapagamento.interfaces.RespostaConexaoBlueetothPinpadListener;
+import br.com.servelojapagamento.interfaces.RespostaInstalacaoTabelasStone;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoStoneListener;
-import br.com.servelojapagamento.preferences.PrefsHelper;
 import stone.application.StoneStart;
 import stone.application.enums.InstalmentTransactionEnum;
 import stone.application.enums.TypeOfTransactionEnum;
 import stone.application.interfaces.StoneCallbackInterface;
 import stone.cache.ApplicationCache;
 import stone.providers.ActiveApplicationProvider;
-import stone.providers.BluetoothConnectionProvider;
 import stone.providers.DownloadTablesProvider;
 import stone.providers.TransactionProvider;
 import stone.user.UserModel;
 import stone.utils.GlobalInformations;
-import stone.utils.PinpadObject;
 import stone.utils.Stone;
 import stone.utils.StoneTransaction;
 
@@ -64,33 +58,54 @@ public class StoneUtils {
         this.activity = activity;
     }
 
-    public void iniciarStone(boolean modoDesenvolvedor) {
+    public void iniciarStone(boolean modoDesenvolvedor, boolean instalarTabelas, int indiceTabela) {
+        Log.d(TAG, "iniciarStone: ");
         this.modoDesenvolvedor = modoDesenvolvedor;
         List<UserModel> user = StoneStart.init(activity);
         // se retornar nulo, voce provavelmente nao ativou a SDK ou as informacoes da Stone SDK foram excluidas
         if (user == null) {
             List<String> stoneCodeList = new ArrayList<>();
             // Adicione seu Stonecode abaixo, como string.
-            stoneCodeList.add("167988962"); // stone code teste
-            // stoneCodeList.add("119555212"); // stone code serveloja
-            final ActiveApplicationProvider activeApplicationProvider = new ActiveApplicationProvider(activity, stoneCodeList);
-            activeApplicationProvider.setDialogMessage("Ativando o aplicativo...");
-            activeApplicationProvider.setDialogTitle("Aguarde");
-            activeApplicationProvider.setActivity(activity);
-            activeApplicationProvider.setWorkInBackground(true);
-            activeApplicationProvider.setConnectionCallback(new StoneCallbackInterface() {
-                public void onSuccess() {
-                    Log.d(TAG, "onSuccess");
+            if (modoDesenvolvedor)
+                stoneCodeList.add("167988962"); // stone code teste
+            else
+                stoneCodeList.add("119555212"); // stone code serveloja
+            if (instalarTabelas) {
+                if (indiceTabela == 1) {
+                    downloadTabelas1(activity, stoneCodeList, null);
+                } else if (indiceTabela == 2) {
+                    downloadTabelas2(null);
                 }
-
-                public void onError() {
-                    Log.d(TAG, "onError");
-                    Log.d(TAG, "onError: " + activeApplicationProvider.getListOfErrors().toString());
-                }
-            });
-            activeApplicationProvider.execute();
+            }
         } else {
+        }
+        // Seta o modo de desenvolvedor
+        if (modoDesenvolvedor)
+            Stone.developerMode();
+    }
 
+    public void iniciarStone(boolean modoDesenvolvedor, boolean instalarTabelas, int indiceTabela,
+                             RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone
+    ) {
+        Log.d(TAG, "iniciarStone: ");
+        this.modoDesenvolvedor = modoDesenvolvedor;
+        List<UserModel> user = StoneStart.init(activity);
+        // se retornar nulo, voce provavelmente nao ativou a SDK ou as informacoes da Stone SDK foram excluidas
+        if (user == null) {
+            List<String> stoneCodeList = new ArrayList<>();
+            // Adicione seu Stonecode abaixo, como string.
+            if (modoDesenvolvedor)
+                stoneCodeList.add("167988962"); // stone code teste
+            else
+                stoneCodeList.add("119555212"); // stone code serveloja
+            if (instalarTabelas) {
+                if (indiceTabela == 1) {
+                    downloadTabelas1(activity, stoneCodeList, respostaInstalacaoTabelasStone);
+                } else if (indiceTabela == 2) {
+                    downloadTabelas2(respostaInstalacaoTabelasStone);
+                }
+            }
+        } else {
         }
         // Seta o modo de desenvolvedor
         if (modoDesenvolvedor)
@@ -137,8 +152,8 @@ public class StoneUtils {
         }
     }
 
-    public void iniciarTransacao(String valor, int tipoTransacao, int qntParcelas,
-                                 final RespostaTransacaoStoneListener respostaTransacaoStoneListener) {
+    void iniciarTransacao(String valor, int tipoTransacao, int qntParcelas,
+                          final RespostaTransacaoStoneListener respostaTransacaoStoneListener) {
         Log.d(TAG, "iniciarTransacao: ");
         final StoneTransaction stoneTransaction = new StoneTransaction(Stone.getPinpadFromListAt(0));
         stoneTransaction.setAmount(valor);
@@ -169,7 +184,7 @@ public class StoneUtils {
         transactionProvider.execute();
     }
 
-    public void downloadTabelas() {
+    public void downloadTabelas2(final RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
         ApplicationCache applicationCache = new ApplicationCache(activity);
         if (!applicationCache.checkIfHasTables()) {
             // Realiza processo de download das tabelas em sua totalidade.
@@ -178,16 +193,43 @@ public class StoneUtils {
             downloadTablesProvider.setWorkInBackground(false); // para dar feedback ao usuario ou nao.
             downloadTablesProvider.setConnectionCallback(new StoneCallbackInterface() {
                 public void onSuccess() {
-                    Toast.makeText(activity, "Tabelas baixadas com sucesso", Toast.LENGTH_SHORT).show();
+                    if (respostaInstalacaoTabelasStone != null)
+                        respostaInstalacaoTabelasStone.onRespostaInstalacaoTabelas(true, "Tabelas baixdadas com sucesso");
                 }
 
                 public void onError() {
-                    Toast.makeText(activity, "Erro no download das tabelas", Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, "onError: " + downloadTablesProvider.getListOfErrors().toString());
+                    if (respostaInstalacaoTabelasStone != null)
+                        respostaInstalacaoTabelasStone.onRespostaInstalacaoTabelas(true,
+                                "Falha ao efetuar o download das tabelas");
                 }
             });
             downloadTablesProvider.execute();
         }
+    }
+
+    public void downloadTabelas1(Activity activity, List<String> stoneCodeList, final RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
+        final ActiveApplicationProvider activeApplicationProvider = new ActiveApplicationProvider(
+                activity, stoneCodeList);
+        Log.d(TAG, "downloadTabelas1: ");
+        activeApplicationProvider.setDialogMessage("Ativando o aplicativo...");
+        activeApplicationProvider.setDialogTitle("Aguarde");
+        activeApplicationProvider.setActivity(activity);
+        activeApplicationProvider.setWorkInBackground(true);
+        activeApplicationProvider.setConnectionCallback(new StoneCallbackInterface() {
+            public void onSuccess() {
+                Log.d(TAG, "onSuccess: ");
+                if (respostaInstalacaoTabelasStone != null)
+                    respostaInstalacaoTabelasStone.onRespostaInstalacaoTabelas(true, "Tabelas baixdadas com sucesso");
+            }
+
+            public void onError() {
+                Log.d(TAG, "onError: ");
+                if (respostaInstalacaoTabelasStone != null)
+                    respostaInstalacaoTabelasStone.onRespostaInstalacaoTabelas(true,
+                            "Falha ao efetuar o download das tabelas");
+            }
+        });
+        activeApplicationProvider.execute();
     }
 
     private InstalmentTransactionEnum getParcelaStone(int qntParcelas) {
