@@ -511,7 +511,6 @@ public class ServelojaTransacaoUtils
                     TransactionDAO transactionDAO = new TransactionDAO(activity);
                     TransactionObject transactionObject = transactionDAO.findTransactionWithId(
                             transactionDAO.getLastTransactionId());
-
                     String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
                     String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
                     if (transactionProvider.getListOfErrors().size() > 0) {
@@ -549,15 +548,13 @@ public class ServelojaTransacaoUtils
                     TransactionDAO transactionDAO = new TransactionDAO(activity);
                     TransactionObject transactionObject = transactionDAO.findTransactionWithId(
                             transactionDAO.getLastTransactionId());
-
-                    String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
-                    String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
-
                     if (transactionProvider.getListOfErrors().size() > 0) {
                         Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone");
                         tratarErroStone(transactionProvider.getListOfErrors().get(0));
                         // indicando erro de transação com a Stone
                     } else {
+                        String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
+                        String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
                         // transação de débito via tarja, não é permitida
                         if (paramsRegistrarTransacao.getTipoTransacao() == TransacaoEnum.TipoTransacao.DEBITO) {
                             // enviar erro
