@@ -155,33 +155,41 @@ public class StoneUtils {
     void iniciarTransacao(String valor, int tipoTransacao, int qntParcelas,
                           final RespostaTransacaoStoneListener respostaTransacaoStoneListener) {
         Log.d(TAG, "iniciarTransacao: ");
-        final StoneTransaction stoneTransaction = new StoneTransaction(Stone.getPinpadFromListAt(0));
-        stoneTransaction.setAmount(valor);
-        stoneTransaction.setEmailClient(null);
-        stoneTransaction.setRequestId("");
-        stoneTransaction.setUserModel(GlobalInformations.getUserModel(0));
-        // tipo de transaÃ§Ã£o (dÃ©bito ou crÃ©dito)
-        stoneTransaction.setTypeOfTransaction(getTipoTransacaoStone(tipoTransacao));
-        // quantidade de parcelas.
-        stoneTransaction.setInstalmentTransactionEnum(getParcelaStone(qntParcelas));
-        // processo para envio da transacao.
-        final TransactionProvider transactionProvider = new
-                TransactionProvider(activity, stoneTransaction, GlobalInformations.getPinpadFromListAt(0));
-        transactionProvider.setWorkInBackground(false);
-        transactionProvider.setDialogMessage("Enviando..");
-        transactionProvider.setDialogTitle("Aguarde");
-        transactionProvider.setConnectionCallback(new StoneCallbackInterface() {
-            @Override
-            public void onSuccess() {
-                respostaTransacaoStoneListener.onRespostaTransacaoStone(true, transactionProvider);
-            }
+        try {
+            final StoneTransaction stoneTransaction = new StoneTransaction(Stone.getPinpadFromListAt(0));
+            stoneTransaction.setAmount(valor);
+            stoneTransaction.setEmailClient(null);
+            stoneTransaction.setRequestId("");
+            stoneTransaction.setUserModel(GlobalInformations.getUserModel(0));
+            // tipo de transaÃ§Ã£o (dÃ©bito ou crÃ©dito)
+            stoneTransaction.setTypeOfTransaction(getTipoTransacaoStone(tipoTransacao));
+            // quantidade de parcelas.
+            stoneTransaction.setInstalmentTransactionEnum(getParcelaStone(qntParcelas));
+            // processo para envio da transacao.
+            final TransactionProvider transactionProvider = new
+                    TransactionProvider(activity, stoneTransaction, GlobalInformations.getPinpadFromListAt(0));
+            transactionProvider.setWorkInBackground(false);
+            transactionProvider.setDialogMessage("Enviando..");
+            transactionProvider.setDialogTitle("Aguarde");
+            transactionProvider.setConnectionCallback(new StoneCallbackInterface() {
+                @Override
+                public void onSuccess() {
+                    if (respostaTransacaoStoneListener != null)
+                        respostaTransacaoStoneListener.onRespostaTransacaoStone(true, transactionProvider);
+                }
 
-            @Override
-            public void onError() {
-                respostaTransacaoStoneListener.onRespostaTransacaoStone(false, transactionProvider);
-            }
-        });
-        transactionProvider.execute();
+                @Override
+                public void onError() {
+                    if (respostaTransacaoStoneListener != null)
+                        respostaTransacaoStoneListener.onRespostaTransacaoStone(false, transactionProvider);
+                }
+            });
+            transactionProvider.execute();
+        } catch (Exception e) {
+            Log.d(TAG, "iniciarTransacao: Exception " + e.getMessage());
+            if (respostaTransacaoStoneListener != null)
+                respostaTransacaoStoneListener.onRespostaTransacaoStone(false, null);
+        }
     }
 
     public void downloadTabelas2(final RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
@@ -199,7 +207,7 @@ public class StoneUtils {
 
                 public void onError() {
                     if (respostaInstalacaoTabelasStone != null)
-                        respostaInstalacaoTabelasStone.onRespostaInstalacaoTabelas(true,
+                        respostaInstalacaoTabelasStone.onRespostaInstalacaoTabelas(false,
                                 "Falha ao efetuar o download das tabelas");
                 }
             });

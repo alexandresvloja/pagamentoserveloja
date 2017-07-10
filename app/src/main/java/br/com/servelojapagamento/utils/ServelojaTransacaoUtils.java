@@ -503,86 +503,118 @@ public class ServelojaTransacaoUtils
      */
     @Override
     public void onRespostaTransacaoStone(boolean status, TransactionProvider transactionProvider) {
-        Log.d(TAG, "onRespostaTransacaoStone: status " + status);
-        Log.d(TAG, "onRespostaTransacaoStone: listaErros " + transactionProvider.getListOfErrors().toString());
+        if (transactionProvider != null) {
+            Log.d(TAG, "onRespostaTransacaoStone: status " + status);
+            Log.d(TAG, "onRespostaTransacaoStone: listaErros " + transactionProvider.getListOfErrors().toString());
+            if (status) {
+                try {
+                    TransactionDAO transactionDAO = new TransactionDAO(activity);
+                    TransactionObject transactionObject = transactionDAO.findTransactionWithId(
+                            transactionDAO.getLastTransactionId());
 
-        TransactionDAO transactionDAO = new TransactionDAO(activity);
-        TransactionObject transactionObject = transactionDAO.findTransactionWithId(
-                transactionDAO.getLastTransactionId());
-
-        String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
-        String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
-
-        if (status) {
-            if (transactionProvider.getListOfErrors().size() > 0) {
-                Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone - lista de erro > 0");
-                // Usuario Passou cartão chipado que não é master ou visa
-                if (!(cartaoBandeira.toLowerCase().equals("mastercard") || cartaoBandeira.toLowerCase().equals("visa"))) {
-                    String mensagem = "Passar esse cartão usando o CHIP não é suportado, por favor repita " +
-                            "a operação usando Tarja Magnética";
+                    String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
+                    String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
+                    if (transactionProvider.getListOfErrors().size() > 0) {
+                        Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone - lista de erro > 0");
+                        // Usuario Passou cartão chipado que não é master ou visa
+                        if (!(cartaoBandeira.toLowerCase().equals("mastercard") || cartaoBandeira.toLowerCase().equals("visa"))) {
+                            String mensagem = "Passar esse cartão usando o CHIP não é suportado, por favor repita " +
+                                    "a operação usando Tarja Magnética";
+                            respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                                    TransacaoEnum.StatusSeveloja.MENSAGEM_ERRO_OBSERVACAO,
+                                    null,
+                                    mensagem);
+                        }
+                    } else {
+                        Log.d(TAG, "onRespostaTransacaoStone: transação efetuada com sucesso");
+                        // após verificação de não ocorrência de erros, procede para preparação dos parâmetros
+                        // e seguir para etapa de inserção na base de dados Serveloja
+                        setupParametrosParaRegistrarTransacao(transactionObject);
+                        criptografarTransacaoStone();
+                        servelojaWebService.registrarTransacao(paramsRegistrarTransacao, this);
+                    }
+                } catch (Exception e) {
+                    String mensagem = " TransactionDAO = null | ";
+                    Log.d(TAG, "onRespostaTransacaoStone: " + mensagem);
                     respostaTransacaoClienteListener.onRespostaTransacaoCliente(
                             TransacaoEnum.StatusSeveloja.MENSAGEM_ERRO_OBSERVACAO,
                             null,
-                            mensagem);
+                            mensagem + e.getMessage());
                 }
             } else {
-                Log.d(TAG, "onRespostaTransacaoStone: transação efetuada com sucesso");
-                // após verificação de não ocorrência de erros, procede para preparação dos parâmetros
-                // e seguir para etapa de inserção na base de dados Serveloja
-                setupParametrosParaRegistrarTransacao(transactionObject);
-                criptografarTransacaoStone();
-                servelojaWebService.registrarTransacao(paramsRegistrarTransacao, this);
+                // Vendas por tarja magnética sempre retornam o callback onError (false) pois a stone não suporta
+                // esse tipo de operação, neste momento, verificar qual foi o Erro e mudar o fluxo caso
+                // o fluxo seja para outras bandeiras.
+                try {
+                    TransactionDAO transactionDAO = new TransactionDAO(activity);
+                    TransactionObject transactionObject = transactionDAO.findTransactionWithId(
+                            transactionDAO.getLastTransactionId());
+
+                    String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
+                    String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
+
+                    if (transactionProvider.getListOfErrors().size() > 0) {
+                        Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone");
+                        tratarErroStone(transactionProvider.getListOfErrors().get(0));
+                        // indicando erro de transação com a Stone
+                    } else {
+                        // transação de débito via tarja, não é permitida
+                        if (paramsRegistrarTransacao.getTipoTransacao() == TransacaoEnum.TipoTransacao.DEBITO) {
+                            // enviar erro
+                            respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                                    TransacaoEnum.StatusSeveloja.TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO,
+                                    null,
+                                    "Transação segura não permite operação de débito");
+                        } else {
+                            // indicando que o erro foi referente a tarja
+                            Log.d(TAG, "onRespostaTransacaoStone: seguindo o fluxo para transação com tarja");
+                            // Usar Reflection para pegar o numero de cartao da resposta do provider tratando a resposta
+                            Object dadosCartao = null;
+                            try {
+                                Field field = transactionProvider.getClass().getDeclaredField("gcrResponseCommand");
+                                field.setAccessible(true);
+                                // obtem os dados referente ao cartão
+                                dadosCartao = field.get(transactionProvider);
+                                cartaoBin = dadosCartao.toString().split(",")[8].split("=")[1].substring(1, 7);
+                                cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
+                                // verifica se a bandeira do cartão, não é permitida pela STONE, pois assim, este cartão, deverá
+                                // ser lido com o CHIP. (Caso seja permitido pela Stone, indica que o mesmo possui CHIP)
+                                // e verifica se a operação não é de débito
+                                if (!stoneUtils.checkBandeiraPermitidaPelaStone(cartaoBandeira)) {
+                                    Log.d(TAG, "onRespostaTransacaoStone: cartão permitido");
+                                    setupParametrosParaRegistrarTransacao(transactionObject);
+                                    String[] tracktrace = dadosCartao.toString().split(",")[8].split("=");
+                                    String dataValidadeCartao = tratarData(tracktrace[2].substring(0, 4));
+                                    // atualização dos atributos referente ao cartão
+                                    paramsRegistrarTransacao.setBandeiraCartao(cartaoBandeira);
+                                    paramsRegistrarTransacao.setNumCartao(tracktrace[1].substring(1));
+                                    paramsRegistrarTransacao.setDataValidadeCartao(dataValidadeCartao);
+                                    paramsRegistrarTransacao.setNumBinCartao(cartaoBin);
+                                    preVerificacaoTransacaoSegura();
+                                }
+                            } catch (NoSuchFieldException e) {
+                                Log.d(TAG, "onRespostaTransacaoStone: NoSuchFieldException " + e.getMessage());
+                            } catch (IllegalAccessException e) {
+                                Log.d(TAG, "onRespostaTransacaoStone: IllegalAccessException " + e.getMessage());
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    String mensagem = " TransactionDAO = null | ";
+                    Log.d(TAG, "onRespostaTransacaoStone: " + mensagem);
+                    respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                            TransacaoEnum.StatusSeveloja.MENSAGEM_ERRO_OBSERVACAO,
+                            null,
+                            mensagem + e.getMessage());
+                }
             }
         } else {
-            // Vendas por tarja magnética sempre retornam o callback onError (false) pois a stone não suporta
-            // esse tipo de operação, neste momento, verificar qual foi o Erro e mudar o fluxo caso
-            // o fluxo seja para outras bandeiras.
-            if (transactionProvider.getListOfErrors().size() > 0) {
-                Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone");
-                tratarErroStone(transactionProvider.getListOfErrors().get(0));
-                // indicando erro de transação com a Stone
-            } else {
-                // transação de débito via tarja, não é permitida
-                if (paramsRegistrarTransacao.getTipoTransacao() == TransacaoEnum.TipoTransacao.DEBITO) {
-                    // enviar erro
-                    respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                            TransacaoEnum.StatusSeveloja.TRANSAC_SERVELOJA_DEBITO_NAO_PERMITIDO,
-                            null,
-                            "Transação segura não permite operação de débito");
-                } else {
-                    // indicando que o erro foi referente a tarja
-                    Log.d(TAG, "onRespostaTransacaoStone: seguindo o fluxo para transação com tarja");
-                    // Usar Reflection para pegar o numero de cartao da resposta do provider tratando a resposta
-                    Object dadosCartao = null;
-                    try {
-                        Field field = transactionProvider.getClass().getDeclaredField("gcrResponseCommand");
-                        field.setAccessible(true);
-                        // obtem os dados referente ao cartão
-                        dadosCartao = field.get(transactionProvider);
-                        cartaoBin = dadosCartao.toString().split(",")[8].split("=")[1].substring(1, 7);
-                        cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);
-                        // verifica se a bandeira do cartão, não é permitida pela STONE, pois assim, este cartão, deverá
-                        // ser lido com o CHIP. (Caso seja permitido pela Stone, indica que o mesmo possui CHIP)
-                        // e verifica se a operação não é de débito
-                        if (!stoneUtils.checkBandeiraPermitidaPelaStone(cartaoBandeira)) {
-                            Log.d(TAG, "onRespostaTransacaoStone: cartão permitido");
-                            setupParametrosParaRegistrarTransacao(transactionObject);
-                            String[] tracktrace = dadosCartao.toString().split(",")[8].split("=");
-                            String dataValidadeCartao = tratarData(tracktrace[2].substring(0, 4));
-                            // atualização dos atributos referente ao cartão
-                            paramsRegistrarTransacao.setBandeiraCartao(cartaoBandeira);
-                            paramsRegistrarTransacao.setNumCartao(tracktrace[1].substring(1));
-                            paramsRegistrarTransacao.setDataValidadeCartao(dataValidadeCartao);
-                            paramsRegistrarTransacao.setNumBinCartao(cartaoBin);
-                            preVerificacaoTransacaoSegura();
-                        }
-                    } catch (NoSuchFieldException e) {
-                        Log.d(TAG, "onRespostaTransacaoStone: NoSuchFieldException " + e.getMessage());
-                    } catch (IllegalAccessException e) {
-                        Log.d(TAG, "onRespostaTransacaoStone: IllegalAccessException " + e.getMessage());
-                    }
-                }
-            }
+            String mensagem = " transactionProvider = null";
+            Log.d(TAG, "onRespostaTransacaoStone: " + mensagem);
+            respostaTransacaoClienteListener.onRespostaTransacaoCliente(
+                    TransacaoEnum.StatusSeveloja.MENSAGEM_ERRO_OBSERVACAO,
+                    null,
+                    mensagem);
         }
     }
 
