@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-group='com.github.alexandresvloja'
+//apply plugin: 'com.github.dcendents.android-maven'
+//group='com.github.alexandresvloja'
 
 android {
     compileSdkVersion 25
@@ -10,9 +10,9 @@ android {
 //        applicationId "br.com.servelojapagamento"
         minSdkVersion 15
         targetSdkVersion 25
-        versionCode 120
-        versionName "1.0"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+//        versionCode 120
+//        versionName "1.0"
+//        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
@@ -46,3 +46,16 @@ dependencies {
     compile files('libs/sdk_stone_2.2.10.jar')
     compile files('libs/xstream_1.4.7.jar')
 }
+
+task delete0ldJar(type: Delete){
+    delete 'release/pagamento.jar'
+}
+
+task exportJar(type: Copy){
+    from('build/intermediates/bundles/release/')
+    into('release/')
+    include('classes.jar')
+    rename('classes.jar','pagamento.jar')
+}
+
+exportJar.dependsOn(delete0ldJar, build)
