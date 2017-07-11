@@ -30,7 +30,7 @@ public interface BaseMundipaggAPI {
     Call<RespostaTransacaoMundipagg> criarTransacaoComToken(@Field("valor") String valor,
                                                             @Field("ref_pedido") String refPedido,
                                                             @Field("token") String token,
-                                                            @Field("numero_parcelas") String numParcelas);
+                                                            @Field("numero_parcelas") int numParcelas);
 
     @GET("transacao/consultarTransacaoPorChavePedido")
     Call<RespostaTransacaoMundipagg> consultarTransacaoPorChavePedido(@Query("chave") String chave);

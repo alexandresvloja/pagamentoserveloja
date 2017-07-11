@@ -17,6 +17,7 @@ import br.com.servelojapagamento.preferences.PrefsHelper;
 import br.com.servelojapagamento.webservice_mundipagg.MundipaggWebService;
 import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTokenCartao;
 import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTokenEndereco;
+import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTransacaoComToken;
 import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTransacaoSemToken;
 import br.com.servelojapagamento.webservice_serveloja.Bandeira;
 import br.com.servelojapagamento.webservice_serveloja.ConteudoBandeira;
@@ -202,6 +203,12 @@ public class ServelojaTransacaoUtils
             ParamsCriarTransacaoSemToken transacao,
             RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
         mundipaggWebService.criarTransacaoSemToken(transacao, respostaTransacaoAplicativoListener);
+    }
+
+    public void criarTransacaoComToken(
+            ParamsCriarTransacaoComToken transacao,
+            RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        mundipaggWebService.criarTransacaoComToken(transacao, respostaTransacaoAplicativoListener);
     }
 
     public void obterToken(

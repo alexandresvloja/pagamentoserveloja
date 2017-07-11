@@ -32,7 +32,7 @@ public class MundipaggWebService {
                 .build();
     }
 
-    public void setModoDesenvolvedor(boolean modoDesenvolvedor){
+    public void setModoDesenvolvedor(boolean modoDesenvolvedor) {
 
     }
 
@@ -50,6 +50,39 @@ public class MundipaggWebService {
                 paramsCriarTransacaoSemToken.getCartaoMes(),
                 paramsCriarTransacaoSemToken.getCartaoNome(),
                 paramsCriarTransacaoSemToken.getNumParcela()
+        );
+
+        call.enqueue(new Callback<RespostaTransacaoMundipagg>() {
+            @Override
+            public void onResponse(Call<RespostaTransacaoMundipagg> call, Response<RespostaTransacaoMundipagg> response) {
+                Log.d(TAG, "onResponse: ");
+                if (response != null && response.body() != null) {
+                    Log.d(TAG, "onResponse: " + response.body().toString());
+                    String mensagem = "Resposta criar transação gerada com sucesso!";
+                    respostaTransacaoAplicativoListener.onRespostaCriarTransacao(true, mensagem, response.body());
+                } else {
+                    String mensagem = "Resposta criar transação null | Resposta null";
+                    respostaTransacaoAplicativoListener.onRespostaCriarTransacao(false, mensagem, null);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RespostaTransacaoMundipagg> call, Throwable t) {
+                Log.d(TAG, "onFailure: " + t.getMessage());
+                respostaTransacaoAplicativoListener.onRespostaCriarTransacao(false, t.getMessage(), null);
+            }
+        });
+    }
+
+    public void criarTransacaoComToken(ParamsCriarTransacaoComToken paramsCriarTransacaoComToken,
+                                       final RespostaTransacaoAplicativoListener respostaTransacaoAplicativoListener) {
+        Log.d(TAG, "criarTransacaoSemToken: ");
+        BaseMundipaggAPI baseMundipaggAPI = retrofit.create(BaseMundipaggAPI.class);
+        final Call<RespostaTransacaoMundipagg> call = baseMundipaggAPI.criarTransacaoComToken(
+                paramsCriarTransacaoComToken.getValor(),
+                paramsCriarTransacaoComToken.getRefPedido(),
+                paramsCriarTransacaoComToken.getToken(),
+                paramsCriarTransacaoComToken.getNumParcela()
         );
 
         call.enqueue(new Callback<RespostaTransacaoMundipagg>() {
@@ -145,7 +178,7 @@ public class MundipaggWebService {
                     Log.d(TAG, "onResponse: " + response.body().toString());
                     String mensagem = "Resposta consultar transação por chave pedido, gerada com sucesso!";
                     respostaTransacaoAplicativoListener.onRespostaConsultarTransacao(true, mensagem, response.body());
-                }else{
+                } else {
                     String mensagem = "Resposta consultar transação por chave pedido null | Resposta null";
                     respostaTransacaoAplicativoListener.onRespostaConsultarTransacao(false, mensagem, null);
                 }
