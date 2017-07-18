@@ -1,16 +1,17 @@
-apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-group='com.github.alexandresvloja'
+apply plugin: 'com.android.application'
+//apply plugin: 'com.android.library'
+//apply plugin: 'com.github.dcendents.android-maven'
+//group = 'com.github.alexandresvloja'
 
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
 
     defaultConfig {
-//        applicationId "br.com.servelojapagamento"
+        applicationId "br.com.servelojapagamento"
         minSdkVersion 15
         targetSdkVersion 25
-//        versionCode 120
+        versionCode 120
 //        versionName "1.0"
 //        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
@@ -23,39 +24,17 @@ android {
 }
 
 
-
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
+//    compile fileTree(include: ['*.jar'], dir: 'libs')
+    testCompile 'junit:junit:4.12'
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    // criação de dialog material design
     compile 'com.afollestad.material-dialogs:commons:0.9.4.5'
-    // retrofit
     compile 'com.squareup.retrofit2:retrofit:2.0.2'
-    compile 'com.squareup.retrofit2:converter-gson:2.0.2'
-    // trata permissoes
-    compile 'com.karumi:dexter:4.1.0'
-    compile 'com.github.hotchemi:permissionsdispatcher:2.2.0'
+    compile ('com.squareup.retrofit2:converter-gson:2.0.2'){
+        exclude group: 'com.google.code.gson' , module: 'gson'
+    }
 
-    compile 'com.android.support:appcompat-v7:25.3.1'
-    compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    testCompile 'junit:junit:4.12'
-    // libs stone
-    compile files('libs/commons-codec-1.9.jar')
-    compile files('libs/sdk_stone_2.2.10.jar')
-    compile files('libs/xstream_1.4.7.jar')
+    compile name: 'sdk_stone_2.3.0', ext: 'aar'
 }
-
-//task delete0ldJar(type: Delete){
-//    delete 'release/pagamento.jar'
-//}
-//
-//task exportJar(type: Copy){
-//    from('build/intermediates/bundles/release/')
-//    into('release/')
-//    include('classes.jar')
-//    rename('classes.jar','pagamento.jar')
-//}
-//
-//exportJar.dependsOn(delete0ldJar, build)

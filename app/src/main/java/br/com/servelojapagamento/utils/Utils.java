@@ -1,6 +1,5 @@
 package br.com.servelojapagamento.utils;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.telephony.TelephonyManager;
@@ -13,8 +12,6 @@ import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Enumeration;
-
-import permissions.dispatcher.NeedsPermission;
 
 /**
  * Created by alexandre on 04/07/2017.
@@ -40,7 +37,6 @@ public class Utils {
         return dateStr;
     }
 
-    @NeedsPermission(Manifest.permission.READ_PHONE_STATE)
     public static String getIMEI(Context context) {
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         String imei = " ";

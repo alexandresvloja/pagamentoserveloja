@@ -5,7 +5,6 @@ import android.os.Build;
 import android.util.Log;
 
 import java.lang.reflect.Field;
-import java.util.List;
 
 import br.com.servelojapagamento.interfaces.RespostaInstalacaoTabelasStone;
 import br.com.servelojapagamento.interfaces.RespostaObterChaveAcessoListener;
@@ -28,9 +27,12 @@ import br.com.servelojapagamento.webservice_serveloja.TransacaoServeloja;
 import br.com.servelojapagamento.webservice_serveloja.UserMobile;
 import stone.application.enums.ErrorsEnum;
 import stone.application.enums.TransactionStatusEnum;
+import stone.application.interfaces.StoneCallbackInterface;
 import stone.database.transaction.TransactionDAO;
 import stone.database.transaction.TransactionObject;
+import stone.providers.LoadTablesProvider;
 import stone.providers.TransactionProvider;
+import stone.utils.GlobalInformations;
 
 import static br.com.servelojapagamento.utils.Utils.encriptar;
 
@@ -70,36 +72,12 @@ public class ServelojaTransacaoUtils
         iniciarListaConteudoBandeira();
     }
 
-    public void iniciarSistemaTransacaoServeloja(boolean modoDesenvolvedor) {
-        this.modoDesenvolvedor = modoDesenvolvedor;
-        stoneUtils.iniciarStone(modoDesenvolvedor, false, 0);
-        mundipaggWebService.setModoDesenvolvedor(modoDesenvolvedor);
-        servelojaWebService.setModoDesenvolvedor(modoDesenvolvedor);
-    }
-
-    public void iniciarSistemaTransacaoServeloja(boolean modoDesenvolvedor, boolean instalarTabelas, int indiceTabela) {
-        this.modoDesenvolvedor = modoDesenvolvedor;
-        stoneUtils.iniciarStone(modoDesenvolvedor, instalarTabelas, indiceTabela);
-        mundipaggWebService.setModoDesenvolvedor(modoDesenvolvedor);
-        servelojaWebService.setModoDesenvolvedor(modoDesenvolvedor);
-    }
-
     public void iniciarSistemaTransacaoServeloja(boolean modoDesenvolvedor,
-                                                 boolean instalarTabelas,
-                                                 int indiceTabela,
-                                                 RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
+                                                 final RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
         this.modoDesenvolvedor = modoDesenvolvedor;
-        stoneUtils.iniciarStone(modoDesenvolvedor, instalarTabelas, indiceTabela, respostaInstalacaoTabelasStone);
+        stoneUtils.iniciarStone(modoDesenvolvedor, respostaInstalacaoTabelasStone);
         mundipaggWebService.setModoDesenvolvedor(modoDesenvolvedor);
         servelojaWebService.setModoDesenvolvedor(modoDesenvolvedor);
-    }
-
-    public void downloadTabelas1(Activity activity, List<String> stoneCodeList, final RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
-        stoneUtils.downloadTabelas1(activity, stoneCodeList, respostaInstalacaoTabelasStone);
-    }
-
-    public void downloadTabelas2(RespostaInstalacaoTabelasStone respostaInstalacaoTabelasStone) {
-        stoneUtils.downloadTabelas2(respostaInstalacaoTabelasStone);
     }
 
     private String tratarData(String data) {
@@ -193,10 +171,6 @@ public class ServelojaTransacaoUtils
                 r = Boolean.parseBoolean(b.possuiSenha);
             }
         return r;
-    }
-
-    public void checkPermissao() {
-        stoneUtils.checkPermissoes();
     }
 
     public void criarTransacaoSemToken(
@@ -432,71 +406,87 @@ public class ServelojaTransacaoUtils
             //Caso as tabelas não estejam atualizadas, atualizar e refazer o fluxo
             case NEED_LOAD_TABLES: {
                 mensagem = "Tabelas desatualizadas";
+                codErro = TransacaoEnum.StatusSeveloja.PRECISA_CARREGAR_TABELAS;
             }
             break;
             case OPERATION_CANCELLED_BY_USER: {
                 mensagem = "Operação cancelada pelo usuário";
+                codErro = TransacaoEnum.StatusSeveloja.OPERACAO_CANCELADA_PELO_USUARIO;
             }
             break;
             case TRANSACTION_NOT_APPROVED: {
                 mensagem = "Transação não aprovada";
+                codErro = TransacaoEnum.StatusSeveloja.TRANSACAO_NAO_APROVADA;
             }
             break;
             case CONNECTION_NOT_FOUND: {
                 mensagem = "Sem conexão com a Internet";
+                codErro = TransacaoEnum.StatusSeveloja.SEM_CONEXAO_COM_INTERNET;
             }
             break;
             case GENERIC_ERROR: {
                 mensagem = "Erro genérico";
+                codErro = TransacaoEnum.StatusSeveloja.ERRO_GENÉRICO;
             }
             break;
             case PINPAD_CONNECTION_NOT_FOUND: {
                 mensagem = "Sem conexão com a Pinpad";
+                codErro = TransacaoEnum.StatusSeveloja.SEM_CONEXAO_COM_PINPAD;
             }
             break;
             case INVALID_AMOUNT: {
                 mensagem = "Valor inválido para passar a transação";
+                codErro = TransacaoEnum.StatusSeveloja.VALOR_INVALIDO_PASSADO;
             }
             break;
             case CARD_REMOVED_BY_USER: {
                 mensagem = "Cartão removido pelo usuário indevidamente";
+                codErro = TransacaoEnum.StatusSeveloja.CARTAO_REMOVIDO_INDEVIDAMENTE;
             }
             break;
             case TIME_OUT: {
                 mensagem = "Tempo expirado, tente novamente";
+                codErro = TransacaoEnum.StatusSeveloja.TIME_OUT;
             }
             break;
             case CANT_READ_CARD_HOLDER_INFORMATION: {
                 mensagem = "Erro na leitura das informações do cartão, tente novamente";
+                codErro = TransacaoEnum.StatusSeveloja.ERRO_LEITURA_INFO_CARTAO;
             }
             break;
             case DEVICE_NOT_COMPATIBLE: {
                 mensagem = "Dispositivo bluetooth não possui a biblioteca compartilhada";
+                codErro = TransacaoEnum.StatusSeveloja.DISPOSITIVO_NAO_COMPARTILHADO;
             }
             break;
             case UNEXPECTED_STATUS_COMMAND: {
                 mensagem = "Status de um comando inesperado, tente novamente";
+                codErro = TransacaoEnum.StatusSeveloja.COMANDO_INESPERADO;
             }
             break;
             case NULL_RESPONSE: {
                 mensagem = "Não houve resposta do Pinpad";
+                codErro = TransacaoEnum.StatusSeveloja.RESPOSTA_PINPAD_NULL;
             }
             break;
             case INVALID_TRANSACTION: {
                 mensagem = "Transação inválida";
+                codErro = TransacaoEnum.StatusSeveloja.TRANSACAO_INVALIDA;
             }
             break;
             case ACCEPTOR_REJECTION: {
                 mensagem = "Transação rejeitada pelo autorizador";
+                codErro = TransacaoEnum.StatusSeveloja.TRANSACAO_REJEITADA_PELO_AUTORIZADOR;
             }
             break;
             case PINPAD_WITHOUT_STONE_KEY: {
                 mensagem = "Cartão de chip inserido pela tarja";
+                codErro = TransacaoEnum.StatusSeveloja.CARTAO_DE_CHIP_INSERIDO_PELA_TARJA;
             }
             break;
         }
         respostaTransacaoClienteListener.onRespostaTransacaoCliente(
-                TransacaoEnum.StatusSeveloja.MENSAGEM_ERRO_OBSERVACAO,
+                codErro,
                 null,
                 mensagem);
     }
@@ -558,7 +548,25 @@ public class ServelojaTransacaoUtils
                     if (transactionProvider.getListOfErrors().size() > 0) {
                         Log.d(TAG, "onRespostaTransacaoStone: erro na transação com a Stone");
                         tratarErroStone(transactionProvider.getListOfErrors().get(0));
-                        // indicando erro de transação com a Stone
+                        if (transactionProvider.getListOfErrors().get(0) == ErrorsEnum.NEED_LOAD_TABLES) {
+                            LoadTablesProvider loadTablesProvider = new LoadTablesProvider(activity,
+                                    transactionProvider.getGcrRequestCommand(), GlobalInformations.getPinpadFromListAt(0));
+                            loadTablesProvider.setDialogMessage("Subindo as tabelas");
+                            loadTablesProvider.setWorkInBackground(false); // para dar feedback ao usuario ou nao.
+                            loadTablesProvider.setConnectionCallback(new StoneCallbackInterface() {
+                                public void onSuccess() {
+                                    // sendTransaction(); // simula um clique no botao de enviar transacao para reenviar a transacao.
+                                    Log.d(TAG, "onSuccess: ");
+                                }
+
+                                public void onError() {
+                                    //  Toast.makeText(getContext(), "Sucesso.", Toast.LENGTH_SHORT).show();
+                                    Log.d(TAG, "onError: ");
+                                }
+                            });
+                            loadTablesProvider.execute();
+                            // indicando erro de transação com a Stone
+                        }
                     } else {
                         String cartaoBin = transactionObject.getCardHolderNumber().substring(0, 6);
                         String cartaoBandeira = Utils.obterBandeiraPorBin(cartaoBin);

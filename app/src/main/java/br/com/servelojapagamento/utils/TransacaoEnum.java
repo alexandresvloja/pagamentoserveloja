@@ -36,6 +36,22 @@ public class TransacaoEnum {
         public static final int REGISTRO_TRANSACAO_SEGURA_SERVELOJA_FALHA = 7;
         public static final int REGISTRO_TRANSACAO_SEGURA_SERVELOJA_SUCESSO = 8;
         public static final int MENSAGEM_ERRO_OBSERVACAO = 9;
+        public static final int PRECISA_CARREGAR_TABELAS = 10;
+        public static final int OPERACAO_CANCELADA_PELO_USUARIO = 11;
+        public static final int TRANSACAO_NAO_APROVADA = 12;
+        public static final int SEM_CONEXAO_COM_INTERNET = 13;
+        public static final int ERRO_GENÉRICO = 14;
+        public static final int SEM_CONEXAO_COM_PINPAD = 15;
+        public static final int VALOR_INVALIDO_PASSADO = 16;
+        public static final int CARTAO_REMOVIDO_INDEVIDAMENTE = 17;
+        public static final int ERRO_LEITURA_INFO_CARTAO = 18;
+        public static final int DISPOSITIVO_NAO_COMPARTILHADO = 19;
+        public static final int COMANDO_INESPERADO = 20;
+        public static final int TIME_OUT = 21;
+        public static final int RESPOSTA_PINPAD_NULL = 22;
+        public static final int TRANSACAO_INVALIDA = 23;
+        public static final int TRANSACAO_REJEITADA_PELO_AUTORIZADOR = 24;
+        public static final int CARTAO_DE_CHIP_INSERIDO_PELA_TARJA = 25;
     }
 
 }

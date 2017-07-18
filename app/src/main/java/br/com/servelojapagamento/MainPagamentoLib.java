@@ -25,20 +25,23 @@ import java.util.Set;
 import br.com.servelojapagamento.adapter_recycler_view.AdapterRvListaDispositivos;
 import br.com.servelojapagamento.interfaces.ClickRecyclerViewListener;
 import br.com.servelojapagamento.interfaces.RespostaConexaoBlueetothPinpadListener;
+import br.com.servelojapagamento.interfaces.RespostaInstalacaoTabelasStone;
+import br.com.servelojapagamento.interfaces.RespostaObterChaveAcessoListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoAplicativoListener;
 import br.com.servelojapagamento.interfaces.RespostaTransacaoClienteListener;
 import br.com.servelojapagamento.interfaces.StatusBluetoothListener;
+import br.com.servelojapagamento.preferences.PrefsHelper;
+import br.com.servelojapagamento.utils.ServelojaBluetooth;
+import br.com.servelojapagamento.utils.ServelojaTransacaoUtils;
+import br.com.servelojapagamento.utils.TransacaoEnum;
 import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTokenCartao;
 import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTokenEndereco;
 import br.com.servelojapagamento.webservice_mundipagg.ParamsCriarTransacaoSemToken;
 import br.com.servelojapagamento.webservice_mundipagg.RespostaConsultarToken;
 import br.com.servelojapagamento.webservice_mundipagg.RespostaCriarToken;
 import br.com.servelojapagamento.webservice_mundipagg.RespostaTransacaoMundipagg;
+import br.com.servelojapagamento.webservice_serveloja.ObterChaveAcessoResposta;
 import br.com.servelojapagamento.webservice_serveloja.TransacaoServeloja;
-import br.com.servelojapagamento.preferences.PrefsHelper;
-import br.com.servelojapagamento.utils.ServelojaBluetooth;
-import br.com.servelojapagamento.utils.ServelojaTransacaoUtils;
-import br.com.servelojapagamento.utils.TransacaoEnum;
 import stone.application.enums.ErrorsEnum;
 import stone.utils.Stone;
 
@@ -71,14 +74,36 @@ public class MainPagamentoLib extends AppCompatActivity implements
         servelojaBluetooth = new ServelojaBluetooth(this);
 //        stoneUtils = new StoneUtils(this);
         servelojaTransacaoUtils = new ServelojaTransacaoUtils(this);
+        servelojaTransacaoUtils.iniciarSistemaTransacaoServeloja(false, new RespostaInstalacaoTabelasStone() {
+            @Override
+            public void onRespostaInstalacaoTabelas(boolean status, String mensagem) {
+                Log.d(TAG, "onRespostaInstalacaoTabelas: Status " + status);
+                Log.d(TAG, "onRespostaInstalacaoTabelas: Mensagem " + mensagem);
+            }
+        });
 //        servelojaWebService = new ServelojaWebService(this);
         prefsHelper = new PrefsHelper(this);
 
         // passando como parâmetro o callback que compôem os três métodos:
-        // onDispositivoEncontradoBluetooth, onEstadoAlteradoBluetooth, onProcuraDispositivoFinalizadaBluetooth
         servelojaBluetooth.setStatusBluetoothListener(this);
-        servelojaBluetooth.iniciarServicoBluetooth(false);
+        servelojaBluetooth.iniciarServicoBluetooth();
+//        new StoneUtils(this).baixarTabelasSemCheckTable(true, new RespostaInstalacaoTabelasStone() {
+//            @Override
+//            public void onRespostaInstalacaoTabelas(boolean status, String mensagem) {
+//                Log.d(TAG, "onRespostaInstalacaoTabelas: Status " + status);
+//                Log.d(TAG, "onRespostaInstalacaoTabelas: Mensagem " + mensagem);
+//            }
+//        });
 
+        servelojaTransacaoUtils.obterChaveAcesso(new RespostaObterChaveAcessoListener() {
+            @Override
+            public void onRespostaObterChaveAcesso(boolean status, ObterChaveAcessoResposta resposta, String mensagem) {
+                Log.d(TAG, "onRespostaObterChaveAcesso: Status " + status);
+                if (status) {
+                    Log.d(TAG, "onRespostaObterChaveAcesso: " + resposta.toString());
+                }
+            }
+        });
 
         // setup views
         setupDialogParearDispositivos();
@@ -88,7 +113,6 @@ public class MainPagamentoLib extends AppCompatActivity implements
         btAbrirDialogProcurarDispositivos.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                servelojaTransacaoUtils.iniciarSistemaTransacaoServeloja(true);
                 if (servelojaBluetooth.checkBluetoothAtivado()) {
                     addDispositivosJaPareados();
                     servelojaBluetooth.iniciarProcuraDispositivos();
@@ -309,6 +333,8 @@ public class MainPagamentoLib extends AppCompatActivity implements
     @Override
     public void onRespostaTransacaoCliente(int status, Object object, String mensagem) {
         Log.d(TAG, "onRespostaTransacaoCliente: status " + status);
+
+
         switch (status) {
             case TransacaoEnum.StatusSeveloja.CARTAO_EXIGE_INFORMAR_CVV:
                 servelojaTransacaoUtils.informarCvv("123");
@@ -327,7 +353,29 @@ public class MainPagamentoLib extends AppCompatActivity implements
             case TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SERVELOJA_FALHA:
                 break;
             case TransacaoEnum.StatusSeveloja.REGISTRO_TRANSACAO_SERVELOJA_SUCESSO:
+                if (materialDialogProgresso != null && materialDialogProgresso.isShowing()) {
+                    materialDialogProgresso.dismiss();
+                }
                 break;
+            case TransacaoEnum.StatusSeveloja.PRECISA_CARREGAR_TABELAS:
+//                ApplicationCache applicationCache = new ApplicationCache(getApplicationContext());
+//                if (!applicationCache.checkIfHasTables()) {
+//                    // Realiza processo de download das tabelas em sua totalidade.
+//                    DownloadTablesProvider downloadTablesProvider = new DownloadTablesProvider(MainPagamentoLib.this,
+//                            GlobalInformations.getUserModel(0));
+//                    downloadTablesProvider.setDialogMessage("Baixando as tabelas, por favor aguarde");
+//                    downloadTablesProvider.setWorkInBackground(false); // para dar feedback ao usuario ou nao.
+//                    downloadTablesProvider.setConnectionCallback(new StoneCallbackInterface() {
+//                        public void onSuccess() {
+//                            Toast.makeText(getApplicationContext(), "Tabelas baixadas com sucesso", Toast.LENGTH_SHORT).show();
+//                        }
+//
+//                        public void onError() {
+//                            Toast.makeText(getApplicationContext(), "Erro no download das tabelas", Toast.LENGTH_SHORT).show();
+//                        }
+//                    });
+//                    downloadTablesProvider.execute();
+//                }
             default:
                 break;
         }
