@@ -1,17 +1,17 @@
-apply plugin: 'com.android.application'
-//apply plugin: 'com.android.library'
-//apply plugin: 'com.github.dcendents.android-maven'
-//group = 'com.github.alexandresvloja'
+//apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'
+group = 'com.github.alexandresvloja'
 
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
 
     defaultConfig {
-        applicationId "br.com.servelojapagamento"
+//        applicationId "br.com.servelojapagamento"
         minSdkVersion 15
         targetSdkVersion 25
-        versionCode 120
+//        versionCode 120
 //        versionName "1.0"
 //        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
